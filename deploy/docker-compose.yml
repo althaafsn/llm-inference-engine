@@ -1,0 +1,139 @@
+name: llm-inference
+
+services:
+  worker-1:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    command: >
+      python -m llm_engine.worker --host 0.0.0.0 --port 8101 --id worker-1
+      --model ${MODEL:-Qwen/Qwen2.5-0.5B-Instruct}
+      --threads ${THREADS:-4}
+    environment:
+      HF_HOME: /models
+    volumes:
+      - hf-cache:/models
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8101/health', timeout=2)
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 300s
+
+  worker-2:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    command: >
+      python -m llm_engine.worker --host 0.0.0.0 --port 8101 --id worker-2
+      --model ${MODEL:-Qwen/Qwen2.5-0.5B-Instruct}
+      --threads ${THREADS:-4}
+    environment:
+      HF_HOME: /models
+    volumes:
+      - hf-cache:/models
+    depends_on:
+      worker-1:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8101/health', timeout=2)
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 300s
+
+  gateway-1:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    command: >
+      python -m llm_engine.gateway --host 0.0.0.0 --port 8100 --id gateway-1
+      --workers http://worker-1:8101 http://worker-2:8101
+      --admission-max ${ADMISSION_MAX:-2}
+    depends_on:
+      worker-1:
+        condition: service_healthy
+      worker-2:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/health', timeout=2)
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+
+  gateway-2:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    command: >
+      python -m llm_engine.gateway --host 0.0.0.0 --port 8100 --id gateway-2
+      --workers http://worker-1:8101 http://worker-2:8101
+      --admission-max ${ADMISSION_MAX:-2}
+    depends_on:
+      worker-1:
+        condition: service_healthy
+      worker-2:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/health', timeout=2)
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
+
+  proxy:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    command: >
+      python -m llm_engine.ha_proxy --host 0.0.0.0 --port 8180
+      --upstreams http://gateway-1:8100 http://gateway-2:8100
+      --health-interval 1.0
+    ports:
+      - "8180:8180"
+    depends_on:
+      gateway-1:
+        condition: service_healthy
+      gateway-2:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8180/health', timeout=2)
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+
+  bench:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    profiles: ["bench"]
+    command: >
+      python -m llm_engine.bench --target http://proxy:8180
+      --rate 2 --duration 10 --max-tokens 8 --output /results/default
+    volumes:
+      - ./results:/results
+
+volumes:
+  hf-cache:

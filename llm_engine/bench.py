@@ -126,6 +126,7 @@ async def run_load(
     max_tokens: int,
     repeat: bool,
     timeout: float,
+    prompt_prefix: str = "",
 ) -> tuple[list[dict], float]:
     started = time.monotonic()
     semaphore = asyncio.Semaphore(concurrency)
@@ -135,7 +136,8 @@ async def run_load(
 
         async def one(index: int) -> None:
             async with semaphore:
-                prompt = PROMPTS[0] if repeat else PROMPTS[index % len(PROMPTS)]
+                base_prompt = PROMPTS[0] if repeat else PROMPTS[index % len(PROMPTS)]
+                prompt = f"{prompt_prefix} {base_prompt}".strip()
                 request_id = f"bench-{index}"
                 row = {"request_id": request_id, "status": None, "success": False}
                 begin = time.monotonic()
@@ -212,8 +214,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--admission-max", type=int, default=0)
     parser.add_argument("--routing", choices=("hash", "least_loaded"), default="least_loaded")
     parser.add_argument("--repeat", action="store_true")
+    parser.add_argument("--prompt-prefix", default="")
     parser.add_argument("--kill-after", type=float, default=2.0)
     parser.add_argument("--timeout", type=float, default=120.0)
+    parser.add_argument("--target", help="existing base URL; skip process startup")
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args(argv)
 
@@ -221,6 +225,35 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 async def run(args: argparse.Namespace) -> int:
     output: Path = args.output
     output.mkdir(parents=True, exist_ok=True)
+    if args.target:
+        rows, elapsed = await run_load(
+            args.target.rstrip("/"),
+            args.rate,
+            args.duration,
+            args.concurrency,
+            args.max_tokens,
+            args.repeat,
+            args.timeout,
+            args.prompt_prefix,
+        )
+        summary = summarize(rows, elapsed)
+        summary["mode"] = args.mode
+        summary["config"] = {
+            "target": args.target,
+            "backend": args.backend,
+            "rate": args.rate,
+            "duration": args.duration,
+            "concurrency": args.concurrency,
+            "max_tokens": args.max_tokens,
+            "routing": args.routing,
+            "prompt_prefix": args.prompt_prefix,
+        }
+        (output / "requests.jsonl").write_text(
+            "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8"
+        )
+        (output / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps(summary, indent=2), flush=True)
+        return 0 if summary["successes"] > 0 else 1
     processes: list[subprocess.Popen] = []
     workers: list[str] = []
     gateways: list[str] = []
@@ -319,6 +352,7 @@ async def run(args: argparse.Namespace) -> int:
             args.max_tokens,
             args.repeat,
             args.timeout,
+            args.prompt_prefix,
         )
         if killer_task:
             await killer_task

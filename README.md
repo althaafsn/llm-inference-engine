@@ -116,6 +116,30 @@ Modes:
 
 The runner allocates free ports, starts the processes, waits for health, runs an open-loop load, and writes `summary.json` and `requests.jsonl`.
 
+## Deploy with Docker Compose
+
+The Compose stack runs two workers, two gateways, and the HA proxy. Only the proxy port is published.
+
+```sh
+docker compose -f deploy/docker-compose.yml up -d --build
+curl -s http://127.0.0.1:8180/health
+docker compose -f deploy/docker-compose.yml run --rm bench \
+  python -m llm_engine.bench --target http://proxy:8180 \
+  --rate 2 --duration 10 --max-tokens 8 --output /results/manual
+docker compose -f deploy/docker-compose.yml down -v
+```
+
+## Deploy on AWS
+
+`deploy/aws_single_host.py` launches one `c6i.2xlarge` host, installs Docker, copies the project, builds the stack, runs normal/failover/recovery, collects the results, and terminates the host. The security group allows SSH only. The default cap is $1.50.
+
+```sh
+python3 deploy/aws_single_host.py          # preflight only
+python3 deploy/aws_single_host.py --run    # deploy, test, clean up
+```
+
+Evidence is written under `deploy/runs/<run-id>/`. The directory is ignored because it contains the temporary SSH key and instance state.
+
 ## Results
 
 Local, CPU-only, Qwen2.5-0.5B-Instruct, 2 workers, 16 output tokens.
@@ -126,7 +150,9 @@ Local, CPU-only, Qwen2.5-0.5B-Instruct, 2 workers, 16 output tokens.
 | Admission limit 2 | 10 / 40 | 30 | 2,031 ms | 0.93 |
 | Admission limit 4 | 12 / 40 | 28 | 4,060 ms | 0.99 |
 
-The baseline returned HTTP 200 for every request but took 19.3 seconds to drain a 10-second workload. Admission limit 2 cut p95 to 2.03 seconds and finished in the workload window. The full results, cache run, and failover run are in [docs/results.md](docs/results.md).
+The baseline returned HTTP 200 for every request but took 19.3 seconds to drain a 10-second workload. Admission limit 2 cut p95 to 2.03 seconds and finished in the workload window.
+
+On AWS, one `c6i.2xlarge` host ran the full Compose stack at 2 requests/s. Normal, failover, and recovery each completed 20/20 requests with no 502/503/504. Failover served all 20 requests from gateway 2 and kept p95 at 724 ms. The run cost $0.024164. Full results: [docs/results.md](docs/results.md).
 
 ## Tests
 

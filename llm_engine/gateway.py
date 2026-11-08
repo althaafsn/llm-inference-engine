@@ -149,12 +149,15 @@ def create_app(gateway: Gateway) -> web.Application:
         return web.json_response(result)
 
     async def health(_: web.Request) -> web.Response:
+        workers = gateway.router.snapshot()
+        available = [worker for worker in workers if not worker["circuit_open"]]
         return web.json_response(
             {
-                "status": "ok",
+                "status": "ok" if available else "degraded",
                 "gateway": gateway.gateway_id,
-                "workers": gateway.router.snapshot(),
-            }
+                "workers": workers,
+            },
+            status=200 if available else 503,
         )
 
     async def stats(_: web.Request) -> web.Response:
@@ -185,6 +188,7 @@ def create_app(gateway: Gateway) -> web.Application:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=8100)
+    parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--id", default="gateway-1")
     parser.add_argument("--workers", nargs="+", required=True)
     parser.add_argument("--admission-max", type=int, default=0)
@@ -202,7 +206,7 @@ def main(argv: list[str] | None = None) -> int:
         failure_threshold=args.failure_threshold,
         open_seconds=args.open_seconds,
     )
-    web.run_app(create_app(gateway), host="127.0.0.1", port=args.port, print=None)
+    web.run_app(create_app(gateway), host=args.host, port=args.port, print=None)
     return 0
 
 

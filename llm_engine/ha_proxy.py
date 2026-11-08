@@ -165,12 +165,13 @@ def create_app(proxy: HAProxy) -> web.Application:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=8180)
+    parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--upstreams", nargs="+", required=True)
     parser.add_argument("--health-interval", type=float, default=1.0)
     parser.add_argument("--timeout", type=float, default=130.0)
     args = parser.parse_args(argv)
     proxy = HAProxy(args.upstreams, args.health_interval, args.timeout)
-    web.run_app(create_app(proxy), host="127.0.0.1", port=args.port, print=None)
+    web.run_app(create_app(proxy), host=args.host, port=args.port, print=None)
     return 0
 
 
