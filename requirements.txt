@@ -1,0 +1,4 @@
+aiohttp>=3.9
+numpy>=1.26
+transformers>=4.40
+torch>=2.2
