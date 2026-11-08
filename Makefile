@@ -4,10 +4,10 @@ test:
 	.venv/bin/python -m unittest discover -s tests -t .
 
 lint:
-	.venv/bin/ruff check llm_engine tests
+	.venv/bin/ruff check llm_engine tests deploy
 
 format:
-	.venv/bin/ruff format llm_engine tests
+	.venv/bin/ruff format llm_engine tests deploy
 
 bench:
 	.venv/bin/python -m llm_engine.bench --mode normal \

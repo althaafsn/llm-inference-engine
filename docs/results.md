@@ -74,6 +74,21 @@ A second failover run at 2 requests/s with a per-gateway limit of 2 produced 10 
 - The cache is effective only for repeated prompts and deterministic generation (`temperature=0`). It is not a KV cache and does not help different prompts.
 - The local proxy fails over without client-visible errors. This is not an ALB result and not a multi-host test.
 
+## AWS single-host deployment
+
+The stack was deployed to one `c6i.2xlarge` host in `us-east-1` (Amazon Linux 2023, Docker Compose). The host ran two workers, two gateways, and the HA proxy. The benchmark ran inside the Compose network against `http://proxy:8180`. The security group allowed SSH only from the owner `/32`; no application port was public.
+
+| Phase | Successes | 503 | p50 | p95 | p99 | Accepted req/s |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Normal | 20 / 20 | 0 | 473 ms | 510 ms | 513 ms | 2.00 |
+| Failover (gateway 1 stopped) | 20 / 20 | 0 | 499 ms | 724 ms | 837 ms | 2.01 |
+| Recovery (gateway 1 restarted) | 20 / 20 | 0 | 456 ms | 595 ms | 646 ms | 2.01 |
+
+- Normal and recovery split requests 10/10 between gateway 1 and gateway 2.
+- During failover, all 20 requests were served by gateway 2. There were no client-visible 502, 503, or 504 responses. The proxy health interval is one second, and it retries a connection error once.
+- The host was terminated; the security group, key pair, and volume were removed. A read-only check found no active tagged instances, volumes, or security groups.
+- Successful run cost **$0.024164**. Earlier bootstrap attempts cost **$0.232165** (Docker bootstrap failures and one run with an invalid failover phase). Total for this project: **$0.256329**.
+
 ## Limits
 
 - One host; workers and load generator share CPU.
@@ -86,7 +101,7 @@ A second failover run at 2 requests/s with a per-gateway limit of 2 produced 10 
 
 ## Next
 
-1. Run the same harness on separate AWS hosts with an internal ALB.
+1. Run the harness on separate worker and gateway hosts with an internal ALB.
 2. Add streaming responses and measure time to first token.
 3. Add a shared admission limit across gateways.
 4. Test multi-AZ placement and a real instance kill.

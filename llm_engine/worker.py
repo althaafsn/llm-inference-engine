@@ -249,6 +249,7 @@ def create_app(worker: LLMWorker) -> web.Application:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=8101)
+    parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--id", default="worker-1")
     parser.add_argument("--model", default="Qwen/Qwen2.5-0.5B-Instruct")
     parser.add_argument("--backend", choices=("hf", "fake"), default="hf")
@@ -269,7 +270,7 @@ def main(argv: list[str] | None = None) -> int:
         max_queue=args.max_queue,
         request_timeout=args.request_timeout,
     )
-    web.run_app(create_app(worker), host="127.0.0.1", port=args.port, print=None)
+    web.run_app(create_app(worker), host=args.host, port=args.port, print=None)
     return 0
 
 

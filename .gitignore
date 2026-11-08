@@ -4,3 +4,5 @@ __pycache__/
 .ruff_cache/
 results/
 *.log
+deploy/results/
+deploy/runs/
