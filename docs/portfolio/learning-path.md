@@ -144,7 +144,7 @@ The `--run` path creates billable resources. Do not run it without a budget and 
 
 **Run:** record a two-minute explanation: problem, design, result, failure, limit, next step.
 
-**Prove:** answer all 12 questions in the resume entry without notes. Mark the three weakest and reread those code paths.
+**Prove:** answer all 13 questions in the resume entry without notes. Mark the three weakest and reread those code paths.
 
 **Answer:**
 

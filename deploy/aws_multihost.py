@@ -467,7 +467,9 @@ def run_bench(
         known_hosts,
         "cd ~/llm && mkdir -p results && ~/venv/bin/python -m llm_engine.bench "
         f"--target {target} --rate 2 --duration {duration} --max-tokens 8 "
-        f"--prompt-prefix {label} --output ~/llm/results/{label}",
+        f"--prompt-prefix {label} --retry-attempts 3 --retry-backoff-ms 100 "
+        "--retry-max-backoff-ms 1000 --retry-jitter 0.2 "
+        f"--output ~/llm/results/{label}",
         timeout=600,
     )
 
@@ -481,7 +483,9 @@ def run_bench_background(
         known_hosts,
         "cd ~/llm && mkdir -p results && setsid ~/venv/bin/python -m llm_engine.bench "
         f"--target {target} --rate 2 --duration {duration} --max-tokens 8 "
-        f"--prompt-prefix {label} --output ~/llm/results/{label} "
+        f"--prompt-prefix {label} --retry-attempts 3 --retry-backoff-ms 100 "
+        "--retry-max-backoff-ms 1000 --retry-jitter 0.2 "
+        f"--output ~/llm/results/{label} "
         "> ~/failover.log 2>&1 < /dev/null & echo $! > ~/bench.pid",
     )
 

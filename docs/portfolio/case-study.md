@@ -4,7 +4,7 @@
 
 ## Summary
 
-I built a distributed serving system for a small Hugging Face language model. A gateway routes requests to batched workers, workers cache greedy responses, admission control protects the queue, and a health-checked proxy and an internal AWS ALB provide failover. The work turned a queue-collapse failure into an explicit load-shedding contract: at 4 requests/s, accepted p95 fell from 13.1 seconds to 2.03 seconds. On AWS, a two-gateway internal ALB completed normal, failover, and recovery, but took 15.8 seconds to mark a dead target unhealthy and exposed 8 HTTP 502 and 1 HTTP 504 response. I measured that gap instead of hiding it.
+I built a distributed serving system for a small Hugging Face language model. A gateway routes requests to batched workers, workers cache greedy responses, admission control protects the queue, and a health-checked proxy and an internal AWS ALB provide failover. The work turned a queue-collapse failure into an explicit load-shedding contract: at 4 requests/s, accepted p95 fell from 13.1 seconds to 2.03 seconds. On AWS, a two-gateway internal ALB completed normal, failover, and recovery, but took 10–16 seconds to mark a dead target unhealthy and exposed HTTP 502/504 during that window. A bounded client retry recovered 14 of 16 retried requests and left 2 exhausted 503s, at the cost of a 10.8-second p95. I measured that tradeoff instead of hiding it.
 
 **Provenance:** this is a new Python implementation of the same architecture as my C++ ONNX engine. The C++ engine is a separate project. I set the goals, chose the experiments, and reviewed the results; implementation and runs were AI-assisted.
 
@@ -59,11 +59,13 @@ Two gateways, two workers, one load generator, internal ALB, 2 requests/s for 20
 | Failover | 31 / 40 | 8 | 1 | 767 ms | 1,308 ms | 1,312 ms |
 | Recovery | 40 / 40 | 0 | 0 | 754 ms | 773 ms | 777 ms |
 
+A follow-up run added three retries with 100 ms initial backoff, a 1 s cap, 0.2 jitter, and `Retry-After`. Failover changed to 38/40: 16 requests were retried, 14 recovered, and 2 exhausted with 503 from the survivor's admission limit. p95 rose to 10.8 seconds because retries waited for the 10-second client timeout. The no-retry run cost $0.089016; the retry run cost $0.092016.
+
 ## What failed, and what I learned
 
 The ALB did fail over, but not fast enough for clients. The target group checks every 5 seconds and requires two unhealthy checks. TargetHealth first reported the dead gateway unhealthy **15.8 seconds** after the termination request. Dead-target requests started about 5.0 seconds after the load marker; the last one started about 13.0 seconds. Clients saw 8 × 502 and 1 × 504. The 504 completed about 23.0 seconds after the load marker because it waited the 10-second client timeout.
 
-The local proxy polls every second and retries a connection error, so it fails over without client-visible errors. The ALB does not retry a POST. The practical fixes are bounded client retry for 502/504, draining for planned shutdowns, or faster detection. A hard instance kill cannot drain.
+The local proxy polls every second and retries a connection error, so it fails over without client-visible errors. The ALB does not retry a POST. Bounded client retry removed the 502/504 responses, but it did not make failover fast: p95 rose to 10.8 seconds because retries waited for the 10-second timeout. A production client needs a shorter timeout or a retry budget. Draining helps planned shutdowns, but a hard instance kill cannot drain.
 
 The normal phase had a higher p95 than recovery (1,349 ms vs 773 ms) because the first requests include worker warmup and two slow requests drive p95 at this sample size. The p50 is stable at about 760 ms.
 
@@ -74,12 +76,12 @@ The normal phase had a higher p95 than recovery (1,349 ms vs 773 ms) because the
 - No streaming or time-to-first-token measurement.
 - Response cache only; no KV-cache reuse or continuous batching across generation settings.
 - No global admission, TLS, authentication, or public endpoint.
-- One ALB run; benchmark evidence, not a production capacity claim.
+- Two ALB runs (no retry and retry); benchmark evidence, not a production capacity claim.
 
 ## Next
 
 1. Add streaming and measure time to first token.
-2. Add bounded client retry for 502/504 and rerun the ALB failover.
+2. Shorten the retry timeout or add a retry budget, then rerun the failover phase.
 3. Add a KV cache and continuous batching.
 4. Test multi-AZ placement and a shared admission limit.
 

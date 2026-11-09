@@ -160,7 +160,7 @@ The baseline returned HTTP 200 for every request but took 19.3 seconds to drain 
 
 On AWS, one `c6i.2xlarge` host ran the full Compose stack at 2 requests/s. Normal, failover, and recovery each completed 20/20 requests with no 502/503/504; the run cost $0.024164.
 
-The multi-host internal-ALB run used two gateways, two workers, and a load generator. Normal and recovery completed 40/40; the failover phase completed 31/40 with 8×502 and 1×504. TargetHealth reported the dead gateway unhealthy after **15.8 s**, and the last 504 completed about **23.0 s** after the load marker. The run cost $0.089016. This is the same health-check weakness the ONNX engine measured; a production design needs client retry or draining. Full results: [docs/results.md](docs/results.md).
+The multi-host internal-ALB run used two gateways, two workers, and a load generator. Normal and recovery completed 40/40; the failover phase completed 31/40 with 8×502 and 1×504. TargetHealth reported the dead gateway unhealthy after **15.8 s**, and the last 504 completed about **23.0 s** after the load marker. A follow-up with three retries recovered 14 of 16 retried requests and left 2 exhausted 503s, but p95 rose to 10.8 s because retries waited for the 10 s timeout. The two ALB runs cost $0.181032; total LLM AWS spend is $0.838690. This is the same health-check weakness the ONNX engine measured; a production design needs a shorter retry timeout or draining. Full results: [docs/results.md](docs/results.md).
 
 ## Portfolio
 

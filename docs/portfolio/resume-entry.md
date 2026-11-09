@@ -7,8 +7,8 @@
 
 - Built a distributed LLM serving engine with an `aiohttp` gateway, batched PyTorch workers, an LRU response cache, per-gateway admission control, and Prometheus metrics; cut accepted p95 from 13.1 s to 2.03 s at 4 requests/s by shedding excess load with HTTP 503 and `Retry-After`.
 - Ran a 14-config optimization matrix across threads, batch window, admission, routing, cache, and model size; selected 4 threads, 10 ms batching, least-loaded routing, and a static limit of 2, and measured SmolLM2-135M at 3.1x lower p95 than Qwen2.5-0.5B.
-- Deployed two gateways and two workers behind an internal AWS ALB; measured a 15.8 s target-health failover with 8x502 and 1x504, a 23 s client-visible tail, and a successful replacement-gateway recovery.
-- Added 40 tests and CI; kept total AWS spend to **$0.75** and verified zero remaining resources after every run.
+- Deployed two gateways and two workers behind an internal AWS ALB; measured a 10–16 s target-health failover, then added bounded retry that recovered 14 of 16 retried requests and left 2 exhausted 503s, with p95 rising to 10.8 s.
+- Added 40 tests and CI; kept total AWS spend to **$0.84** and verified zero remaining resources after every run.
 
 ## Tailoring
 
@@ -28,10 +28,10 @@ Use three bullets if space is tight. Drop the cost bullet first; the engineering
 | 14-config optimization matrix | `docs/optimization.md`, `benchmarks/llm-optimization.json` |
 | 4 threads, 10 ms, least-loaded, limit 2 | `docs/optimization.md`, decisions section |
 | SmolLM2-135M 3.1x lower p95 | `docs/optimization.md`, model row |
-| 15.8 s target-health failover | `docs/results.md`, AWS multi-host section |
-| 8x502 and 1x504 | same section |
+| 10–16 s target-health failover | `docs/results.md`, AWS multi-host section |
+| 14 of 16 retried; 2 exhausted 503s | same section, client retry table |
 | 40 tests | `tests/`, CI |
-| $0.75 total AWS spend | `docs/results.md`, cost lines |
+| $0.84 total AWS spend | `docs/results.md`, cost lines |
 | Cleanup verified | `docs/results.md`; read-only AWS check |
 
 ## Do not claim
@@ -43,6 +43,7 @@ Use three bullets if space is tight. Drop the cost bullet first; the engineering
 - “KV cache” or “continuous batching”. The cache is a response cache; batches run to completion.
 - “Handles 4 requests/s”. The offered rate was 4; accepted throughput was about 1–2 requests/s after shedding.
 - “Wrote every line”. Implementation and runs were AI-assisted; you directed the work and reviewed the results.
+- “Retry fixed the failover latency”. Retry removed 502/504 but raised p95 to 10.8 s; the health window is still 10–16 s.
 
 ## Can you defend this?
 
@@ -51,17 +52,18 @@ Use three bullets if space is tight. Drop the cost bullet first; the engineering
 3. **Why admission limit 2?** At 2 requests/s, limit 2 gave p95 1,072 ms with 75% accepted. Limit 1 protected p95 at 859 ms but shed half the work; limits 0 and 4 queued to about 2 seconds.
 4. **Why static instead of adaptive?** Adaptive converged from 6 to 1, but the early queue at limit 6 dominated p95 (2,654 ms). Static 2 had p95 1,242 ms at 4 requests/s. Static remains the default; adaptive is opt-in.
 5. **Why p95 and accepted throughput?** Tail latency is what users feel. Accepted throughput shows the goodput that remains after shedding; offered rate alone hides the rejection cost.
-6. **Why 15.8 s for the ALB?** The target group checks every 5 s and requires two unhealthy checks. TargetHealth reported the dead gateway unhealthy 15.8 s after the termination request.
-7. **Why 502 and 504?** The ALB kept routing to the dead target until it was marked unhealthy. 502 means the target could not be reached; 504 means the client timed out after 10 s.
+6. **Why 10–16 s for the ALB?** The target group checks every 5 s and requires two unhealthy checks. TargetHealth reported the dead gateway unhealthy at 15.8 s in the no-retry run and 10.2 s in the retry run; the timing depends on where the check lands.
+7. **Why 502 and 504?** The ALB kept routing to the dead target until it was marked unhealthy. 502 means the target could not be reached; 504 means the client timed out after 10 s. Retry removed these responses but not the window.
 8. **Why did the last 504 finish at 23 s?** It started at about 13 s and waited the 10 s client timeout. The health state changed at 15.8 s, but the request was already in flight.
 9. **Why is normal p95 higher than recovery?** The normal phase includes worker warmup; the p50 is stable at about 760 ms. Recovery runs on warm workers.
 10. **Why cache only greedy responses?** Sampled responses are not deterministic. Caching them would return a different answer for the same prompt and settings.
 11. **Why least-loaded instead of hash?** Least-loaded beat hash for unique prompts (1,072 ms vs 1,660 ms). Hash is useful when repeated prompts must reach the same worker for cache locality.
-12. **What did you personally do?** You set the goals, chose the experiments, and reviewed the results. Implementation and runs were AI-assisted. Say that plainly and be ready to explain the code paths.
+12. **What did retry fix, and what did it cost?** It removed 502/504; 14 of 16 retried requests recovered. The cost is p95 10.8 s because retries waited for the 10 s timeout. A shorter timeout or a retry budget is next.
+13. **What did you personally do?** You set the goals, chose the experiments, and reviewed the results. Implementation and runs were AI-assisted. Say that plainly and be ready to explain the code paths.
 
 ## Risks before publishing
 
 - The model is 0.5B on CPU; do not imply GPU-scale or production capacity.
 - The project is strongest as distributed systems and performance engineering, not as a general backend service. It has no database, authentication, or multi-tenant API.
-- The 15.8 s failover is a limitation, not a hidden failure. Present it as measured evidence and a clear next step.
+- The 10–16 s failover is a limitation, not a hidden failure. Present it as measured evidence and a clear next step.
 - The repository is MIT-licensed and original; the C++ ONNX engine is a separate project with its own provenance note.

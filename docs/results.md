@@ -88,7 +88,20 @@ Topology: two `c6i.large` gateways, two `c6i.xlarge` workers, one `c6i.large` lo
 - TargetHealth reported the terminated gateway unhealthy **15.8 seconds** after the termination request. The 5 s interval and two unhealthy checks set the floor.
 - Dead-target requests started about 5.0 seconds after the load marker and the last one started about 13.0 seconds. Clients saw **8 × 502** and **1 × 504**. The 504 completed about 23.0 seconds after the load marker because it waited the 10 s client timeout.
 - Recovery launched a replacement gateway, registered it, and split traffic 20/20 with the surviving gateway.
-- Successful run cost **$0.089016**. Earlier ALB attempts cost **$0.401329**. Multi-host total: **$0.490345**.
+- Successful run cost **$0.089016**. Earlier ALB attempts cost **$0.401329**.
+
+### Client retry
+
+A second ALB run added bounded client retry: three attempts, 100 ms initial backoff, 1 s maximum, 0.2 jitter, and `Retry-After` handling. Normal and recovery still completed 40/40. The failover phase changed to:
+
+| Failover with retry | Successes | 502 | 504 | 503 | p50 | p95 | p99 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Gateway 1 terminated | 38 / 40 | 0 | 0 | 2 | 779 ms | 10,839 ms | 12,118 ms |
+
+- Sixteen requests were retried. Fourteen recovered; two exhausted with 503 from the surviving gateway's admission limit.
+- Retry removed the 502/504 responses, but p95 rose to 10.8 s because retries waited for the 10 s client timeout before succeeding. A production client needs a shorter timeout or a retry budget.
+- TargetHealth reported the dead gateway unhealthy after **10.189 seconds** in this run. The observation varies with health-check timing; the two checks set a 10 s floor.
+- The retry run cost **$0.092016**. Multi-host total, including the no-retry run and earlier attempts: **$0.582361**.
 
 ### Reading the normal p95
 
@@ -107,7 +120,8 @@ The stack was deployed to one `c6i.2xlarge` host in `us-east-1` (Amazon Linux 20
 - Normal and recovery split requests 10/10 between gateway 1 and gateway 2.
 - During failover, all 20 requests were served by gateway 2. There were no client-visible 502, 503, or 504 responses. The proxy health interval is one second, and it retries a connection error once.
 - The host was terminated; the security group, key pair, and volume were removed. A read-only check found no active tagged instances, volumes, or security groups.
-- Successful run cost **$0.024164**. Earlier bootstrap attempts cost **$0.232165** (Docker bootstrap failures and one run with an invalid failover phase). Single-host total: **$0.256329**. Combined with the ALB run: **$0.746674**.
+- Successful run cost **$0.024164**. Earlier bootstrap attempts cost **$0.232165** (Docker bootstrap failures and one run with an invalid failover phase). Single-host total: **$0.256329**.
+- Multi-host ALB total: **$0.582361**. Combined LLM total: **$0.838690**.
 
 ## Limits
 
@@ -115,7 +129,7 @@ The stack was deployed to one `c6i.2xlarge` host in `us-east-1` (Amazon Linux 20
 - One model (0.5B) and one prompt set.
 - 10-second runs; small request counts.
 - No TLS, authentication, public endpoint, or global admission.
-- No AWS ALB, multi-AZ, or multi-host run.
+- The AWS ALB run used one region and one subnet/AZ for targets; it is not a multi-AZ failover test.
 - No KV-cache reuse, continuous batching across different parameter sets, or streaming.
 - The cache only stores greedy responses.
 
