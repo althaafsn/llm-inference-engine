@@ -48,6 +48,36 @@ The first attempts failed for environment reasons, not application reasons:
 
 The controller now includes these fixes and verifies `docker compose version` before building.
 
+## AWS multi-host internal ALB
+
+`aws_multihost.py` provisions two `c6i.large` gateways, two `c6i.xlarge` workers, one `c6i.large` load generator, and an internal ALB. It installs Python 3.12 and the dependencies directly on each host, starts the services, runs normal/failover/recovery, replaces the failed gateway, collects evidence, and removes every resource.
+
+```sh
+python3 deploy/aws_multihost.py          # preflight only
+python3 deploy/aws_multihost.py --run    # deploy, test, clean up
+```
+
+The ALB target group uses HTTP `8100`, path `/health`, 5 s interval, 3 s timeout, 2 healthy and 2 unhealthy checks. The security groups allow SSH from the owner, ALB-to-gateway, gateway-to-worker, and load-to-ALB only.
+
+### Result
+
+| Phase | Successes | 502 | 504 | p50 | p95 | p99 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Normal | 40 / 40 | 0 | 0 | 762 ms | 1,349 ms | 1,412 ms |
+| Failover | 31 / 40 | 8 | 1 | 767 ms | 1,308 ms | 1,312 ms |
+| Recovery | 40 / 40 | 0 | 0 | 754 ms | 773 ms | 777 ms |
+
+TargetHealth reported the dead gateway unhealthy after **15.8 s**. Dead-target requests started about 5.0 s after the load marker; the last 504 completed about 23.0 s. Recovery split traffic 20/20 between the replacement gateway and the survivor.
+
+Cost: **$0.089016** for the successful run; **$0.401329** for earlier attempts; multi-host total **$0.490345**.
+
+### Bootstrap notes
+
+- Background services must detach from the SSH channel. The controller uses `setsid`, `< /dev/null`, and a non-blocking `Popen`; a plain `nohup ... &` kept the SSH command open.
+- The failover bench must start in the background before the gateway is terminated. A blocking SSH start delayed the termination until the bench finished.
+- SCP is retried three times; the first replacement-gateway copy failed once and lost the evidence.
+- The normal phase includes worker warmup; recovery runs on warm workers, so its p95 is lower.
+
 ## Limits
 
 - One host. The workers, gateways, proxy, and benchmark share the same 8 vCPUs and 16 GB of RAM.

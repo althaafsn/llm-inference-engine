@@ -27,6 +27,18 @@ The full data is in `benchmarks/llm-optimization.json` and `benchmarks/llm-adapt
 | Adaptive, max 4, target 800 ms | 20 / 20 | 0 | 1,458 ms | 1,916 ms | 1.76 | 14.1 |
 | Retry 3 attempts, limit 2 | 19 / 20 | 1 | 1,066 ms | 4,227 ms | 1.53 | 12.2 |
 
+## Worker scaling
+
+A separate sweep used 1, 2, and 4 workers on the same 16-CPU host, 4 offered requests/s for 5 seconds, 8 tokens, a cold cache, and unique prompts. No admission limit.
+
+| Workers | Successes | p50 | p95 | Accepted req/s |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 20 / 20 | 2,707 ms | 3,517 ms | 2.60 |
+| 2 | 20 / 20 | 3,334 ms | 4,413 ms | 2.34 |
+| 4 | 20 / 20 | 3,201 ms | 5,584 ms | 2.07 |
+
+More workers make the local result worse. Each worker uses four torch threads, and the load generator shares the same 16 logical CPUs. Beyond one worker the host is oversubscribed, so throughput falls and p95 rises. On AWS each worker has its own `c6i.xlarge`, so the two-worker ALB topology does not have this local contention.
+
 ## Findings
 
 **Threads.** Four threads per worker gives the best p95. Two threads underutilize the CPU; eight threads per worker (16 total on 16 logical CPUs) adds contention and raises p95 to 1,132 ms.

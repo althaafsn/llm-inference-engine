@@ -131,14 +131,20 @@ docker compose -f deploy/docker-compose.yml down -v
 
 ## Deploy on AWS
 
-`deploy/aws_single_host.py` launches one `c6i.2xlarge` host, installs Docker, copies the project, builds the stack, runs normal/failover/recovery, collects the results, and terminates the host. The security group allows SSH only. The default cap is $1.50.
+Two controllers are included:
+
+- `deploy/aws_single_host.py` launches one `c6i.2xlarge` host, installs Docker, builds the full Compose stack, runs normal/failover/recovery, collects the results, and terminates the host.
+- `deploy/aws_multihost.py` launches two `c6i.large` gateways, two `c6i.xlarge` workers, one `c6i.large` load generator, and an internal ALB. It runs normal/failover/recovery, replaces the failed gateway, collects evidence, and removes every resource.
 
 ```sh
 python3 deploy/aws_single_host.py          # preflight only
-python3 deploy/aws_single_host.py --run    # deploy, test, clean up
+python3 deploy/aws_single_host.py --run
+
+python3 deploy/aws_multihost.py            # preflight only
+python3 deploy/aws_multihost.py --run
 ```
 
-Evidence is written under `deploy/runs/<run-id>/`. The directory is ignored because it contains the temporary SSH key and instance state.
+Both controllers use a $1.50 cap. Evidence is written under `deploy/runs/<run-id>/`, which is ignored because it contains the temporary SSH key and instance state.
 
 ## Results
 
@@ -152,13 +158,19 @@ Local, CPU-only, Qwen2.5-0.5B-Instruct, 2 workers, 16 output tokens.
 
 The baseline returned HTTP 200 for every request but took 19.3 seconds to drain a 10-second workload. Admission limit 2 cut p95 to 2.03 seconds and finished in the workload window.
 
-On AWS, one `c6i.2xlarge` host ran the full Compose stack at 2 requests/s. Normal, failover, and recovery each completed 20/20 requests with no 502/503/504. Failover served all 20 requests from gateway 2 and kept p95 at 724 ms. The run cost $0.024164. Full results: [docs/results.md](docs/results.md).
+On AWS, one `c6i.2xlarge` host ran the full Compose stack at 2 requests/s. Normal, failover, and recovery each completed 20/20 requests with no 502/503/504; the run cost $0.024164.
+
+The multi-host internal-ALB run used two gateways, two workers, and a load generator. Normal and recovery completed 40/40; the failover phase completed 31/40 with 8×502 and 1×504. TargetHealth reported the dead gateway unhealthy after **15.8 s**, and the last 504 completed about **23.0 s** after the load marker. The run cost $0.089016. This is the same health-check weakness the ONNX engine measured; a production design needs client retry or draining. Full results: [docs/results.md](docs/results.md).
+
+## Portfolio
+
+See [docs/portfolio](docs/portfolio/README.md) for the case study, resume bullets, eight-session learning path, and five-minute demo script.
 
 ## Tests
 
 ```sh
 .venv/bin/python -m unittest discover -s tests -t .
-.venv/bin/ruff check llm_engine tests
+.venv/bin/ruff check llm_engine tests deploy
 ```
 
 The suite covers the cache, routing, circuit breaker, worker batching, queue-full behavior, admission rejection, gateway retry, and HA proxy failover. It uses the deterministic fake backend, so it does not load the model.

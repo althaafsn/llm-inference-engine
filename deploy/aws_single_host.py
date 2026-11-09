@@ -206,19 +206,35 @@ def ssh(host: str, key: Path, known_hosts: Path, remote: str, timeout: int = 180
 
 
 def scp_to(host: str, key: Path, known_hosts: Path, source: Path, target: str) -> None:
-    command(
-        ["scp", *ssh_options(key, known_hosts), str(source), f"ec2-user@{host}:{target}"],
-        timeout=600,
-        capture_output=True,
-    )
+    last = ""
+    for _attempt in range(3):
+        result = command(
+            ["scp", *ssh_options(key, known_hosts), str(source), f"ec2-user@{host}:{target}"],
+            timeout=600,
+            check=False,
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            return
+        last = result.stderr
+        time.sleep(3)
+    raise RuntimeError(f"scp to {host} failed: {last}")
 
 
 def scp_from(host: str, key: Path, known_hosts: Path, source: str, target: Path) -> None:
-    command(
-        ["scp", *ssh_options(key, known_hosts), "-r", f"ec2-user@{host}:{source}", str(target)],
-        timeout=600,
-        capture_output=True,
-    )
+    last = ""
+    for _attempt in range(3):
+        result = command(
+            ["scp", *ssh_options(key, known_hosts), "-r", f"ec2-user@{host}:{source}", str(target)],
+            timeout=600,
+            check=False,
+            capture_output=True,
+        )
+        if result.returncode == 0:
+            return
+        last = result.stderr
+        time.sleep(3)
+    raise RuntimeError(f"scp from {host} failed: {last}")
 
 
 def create_payload(directory: Path) -> Path:

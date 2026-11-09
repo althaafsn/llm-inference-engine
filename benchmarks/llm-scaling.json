@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-09",
+  "scope": "Local worker scaling at 4 offered req/s, 5 seconds, 8 tokens, cold cache, unique prompts, no admission.",
+  "host": "AMD Ryzen 7 5800H, 16 logical CPUs",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "threads_per_worker": 4,
+  "results": [
+    {
+      "workers": 1,
+      "requests": 20,
+      "successes": 20,
+      "failures": 0,
+      "status_counts": {
+        "200": 20
+      },
+      "successful_requests_per_second": 2.602,
+      "tokens_per_second": 20.82,
+      "latency_ms": {
+        "p50": 2706.867,
+        "p95": 3517.346,
+        "p99": 3766.854
+      },
+      "cache_hits": 0
+    },
+    {
+      "workers": 2,
+      "requests": 20,
+      "successes": 20,
+      "failures": 0,
+      "status_counts": {
+        "200": 20
+      },
+      "successful_requests_per_second": 2.343,
+      "tokens_per_second": 18.748,
+      "latency_ms": {
+        "p50": 3333.734,
+        "p95": 4413.185,
+        "p99": 4431.361
+      },
+      "cache_hits": 0
+    },
+    {
+      "workers": 4,
+      "requests": 20,
+      "successes": 20,
+      "failures": 0,
+      "status_counts": {
+        "200": 20
+      },
+      "successful_requests_per_second": 2.074,
+      "tokens_per_second": 16.595,
+      "latency_ms": {
+        "p50": 3201.166,
+        "p95": 5583.773,
+        "p99": 6162.84
+      },
+      "cache_hits": 0
+    }
+  ]
+}
