@@ -69,7 +69,9 @@ The ALB target group uses HTTP `8100`, path `/health`, 5 s interval, 3 s timeout
 
 TargetHealth reported the dead gateway unhealthy after **15.8 s**. Dead-target requests started about 5.0 s after the load marker; the last 504 completed about 23.0 s. Recovery split traffic 20/20 between the replacement gateway and the survivor.
 
-Cost: **$0.089016** for the successful run; **$0.401329** for earlier attempts; multi-host total **$0.490345**.
+A second run added three retries with 100 ms initial backoff, 1 s cap, 0.2 jitter, and `Retry-After`. Failover changed to 38/40: 16 requests were retried, 14 recovered, and 2 exhausted with 503 from the survivor's admission limit. p95 rose to **10.8 s** because retries waited for the 10 s client timeout. Target health was reported after **10.189 s** in that run.
+
+Cost: no-retry run **$0.089016**; retry run **$0.092016**; earlier attempts **$0.401329**; multi-host total **$0.582361**. Combined LLM total **$0.838690**.
 
 ### Bootstrap notes
 
