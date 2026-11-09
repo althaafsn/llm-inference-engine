@@ -48,7 +48,7 @@ def public_ipv4() -> str:
         return response.read(100).decode("ascii").strip()
 
 
-def preflight() -> dict:
+def preflight(workers: int = 2) -> dict:
     for executable in ("aws", "ssh", "scp", "ssh-keygen", "tar"):
         if not shutil.which(executable):
             raise RuntimeError(f"missing local command: {executable}")
@@ -90,8 +90,9 @@ def preflight() -> dict:
     print(f"Account {account}, region {REGION}")
     print(f"Subnet A {chosen[0]['SubnetId']} ({chosen[0]['AvailabilityZone']})")
     print(f"Subnet B {chosen[1]['SubnetId']} ({chosen[1]['AvailabilityZone']})")
-    print(f"Gateways {GATEWAY_TYPE}, workers {WORKER_TYPE}, load {LOAD_TYPE}")
-    print(f"Budget cap ${CAP_USD:.2f}; estimated {HOURLY_USD:.3f}/hour")
+    hourly = 2 * 0.085 + workers * 0.17 + 0.085 + 0.03
+    print(f"Gateways {GATEWAY_TYPE}, workers {workers} x {WORKER_TYPE}, load {LOAD_TYPE}")
+    print(f"Budget cap ${CAP_USD:.2f}; estimated {hourly:.3f}/hour")
     return {
         "account": account,
         "region": REGION,
@@ -322,7 +323,7 @@ def start_worker(host: str, key: Path, known_hosts: Path, role: str) -> None:
 def start_gateway(state: dict, host: str, key: Path, known_hosts: Path, role: str) -> None:
     workers = " ".join(
         f"http://{state['instances'][worker]['private_ip']}:8101"
-        for worker in ("worker-1", "worker-2")
+        for worker in state["worker_roles"]
     )
     start_background(
         host,
@@ -330,7 +331,8 @@ def start_gateway(state: dict, host: str, key: Path, known_hosts: Path, role: st
         known_hosts,
         "cd ~/llm && setsid ~/venv/bin/python -m llm_engine.gateway "
         f"--host 0.0.0.0 --port 8100 --id {role} --workers {workers} "
-        "--admission-max 2 > ~/gateway.log 2>&1 < /dev/null & echo $! > ~/gateway.pid",
+        f"--admission-max {state['admission_max']} "
+        "> ~/gateway.log 2>&1 < /dev/null & echo $! > ~/gateway.pid",
     )
 
 
@@ -459,14 +461,20 @@ def wait_targets_healthy(state: dict, roles: set[str], timeout: float = 240.0) -
 
 
 def run_bench(
-    load_host: str, key: Path, known_hosts: Path, target: str, label: str, duration: float
+    load_host: str,
+    key: Path,
+    known_hosts: Path,
+    target: str,
+    label: str,
+    rate: float,
+    duration: float,
 ) -> None:
     ssh(
         load_host,
         key,
         known_hosts,
         "cd ~/llm && mkdir -p results && ~/venv/bin/python -m llm_engine.bench "
-        f"--target {target} --rate 2 --duration {duration} --max-tokens 8 "
+        f"--target {target} --rate {rate} --duration {duration} --max-tokens 8 "
         f"--prompt-prefix {label} --retry-attempts 3 --retry-backoff-ms 100 "
         "--retry-max-backoff-ms 1000 --retry-jitter 0.2 "
         f"--output ~/llm/results/{label}",
@@ -475,14 +483,20 @@ def run_bench(
 
 
 def run_bench_background(
-    load_host: str, key: Path, known_hosts: Path, target: str, label: str, duration: float
+    load_host: str,
+    key: Path,
+    known_hosts: Path,
+    target: str,
+    label: str,
+    rate: float,
+    duration: float,
 ) -> None:
     start_background(
         load_host,
         key,
         known_hosts,
         "cd ~/llm && mkdir -p results && setsid ~/venv/bin/python -m llm_engine.bench "
-        f"--target {target} --rate 2 --duration {duration} --max-tokens 8 "
+        f"--target {target} --rate {rate} --duration {duration} --max-tokens 8 "
         f"--prompt-prefix {label} --retry-attempts 3 --retry-backoff-ms 100 "
         "--retry-max-backoff-ms 1000 --retry-jitter 0.2 "
         f"--output ~/llm/results/{label} "
@@ -602,7 +616,7 @@ def verify_cleanup() -> bool:
 
 
 def run(args: argparse.Namespace) -> int:
-    context = preflight()
+    context = preflight(args.workers)
     run_id = "llmha-" + secrets.token_hex(6)
     directory = HERE / "runs" / run_id
     directory.mkdir(parents=True, exist_ok=False)
@@ -621,6 +635,9 @@ def run(args: argparse.Namespace) -> int:
         "groups": {},
         "alb": {},
         "key_name": None,
+        "worker_roles": [f"worker-{index}" for index in range(1, args.workers + 1)],
+        "admission_max": args.admission_max,
+        "hourly_usd": 2 * 0.085 + args.workers * 0.17 + 0.085 + 0.03,
     }
     save_state(state_path, state)
     success = False
@@ -650,8 +667,7 @@ def run(args: argparse.Namespace) -> int:
         roles = [
             ("gateway-1", GATEWAY_TYPE, ["ssh", "gateway"]),
             ("gateway-2", GATEWAY_TYPE, ["ssh", "gateway"]),
-            ("worker-1", WORKER_TYPE, ["ssh", "worker"]),
-            ("worker-2", WORKER_TYPE, ["ssh", "worker"]),
+            *[(role, WORKER_TYPE, ["ssh", "worker"]) for role in state["worker_roles"]],
             ("load", LOAD_TYPE, ["ssh", "load"]),
         ]
         for role, instance_type, group_names in roles:
@@ -664,7 +680,7 @@ def run(args: argparse.Namespace) -> int:
                 key_name,
                 userdata,
             )
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(roles)) as pool:
             list(
                 pool.map(
                     lambda role: wait_ssh(state["instances"][role]["public_ip"], key, known_hosts),
@@ -674,7 +690,7 @@ def run(args: argparse.Namespace) -> int:
         print("SSH ready", flush=True)
 
         payload = create_payload(directory)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(roles)) as pool:
             list(
                 pool.map(
                     lambda role: scp_to(
@@ -697,7 +713,7 @@ def run(args: argparse.Namespace) -> int:
             )
         print("payload copied", flush=True)
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(roles)) as pool:
             futures = [
                 pool.submit(
                     setup_host, state["instances"][role]["public_ip"], key, known_hosts, role
@@ -708,9 +724,9 @@ def run(args: argparse.Namespace) -> int:
                 future.result()
         print("hosts ready", flush=True)
 
-        for role in ("worker-1", "worker-2"):
+        for role in state["worker_roles"]:
             start_worker(state["instances"][role]["public_ip"], key, known_hosts, role)
-        for role in ("worker-1", "worker-2"):
+        for role in state["worker_roles"]:
             wait_http(
                 state["instances"][role]["public_ip"],
                 key,
@@ -737,10 +753,16 @@ def run(args: argparse.Namespace) -> int:
         target = f"http://{state['alb']['dns']}:8100"
         load_host = state["instances"]["load"]["public_ip"]
 
-        run_bench(load_host, key, known_hosts, target, "normal", 20)
-        print("normal complete", flush=True)
+        rates = args.rates or [args.rate]
+        for rate in rates:
+            label = f"normal-{rate:g}"
+            run_bench(load_host, key, known_hosts, target, label, rate, args.duration)
+            print(f"normal {rate:g} complete", flush=True)
 
-        run_bench_background(load_host, key, known_hosts, target, "failover", 20)
+        failover_rate = rates[-1]
+        run_bench_background(
+            load_host, key, known_hosts, target, "failover", failover_rate, args.duration
+        )
         time.sleep(3)
         gateway_id = state["instances"]["gateway-1"]["id"]
         killed_at = time.monotonic()
@@ -807,7 +829,7 @@ def run(args: argparse.Namespace) -> int:
         )
         register_targets(state, ["gateway-1-recovery"])
         wait_targets_healthy(state, {"gateway-1-recovery"})
-        run_bench(load_host, key, known_hosts, target, "recovery", 20)
+        run_bench(load_host, key, known_hosts, target, "recovery", failover_rate, args.duration)
         print("recovery complete", flush=True)
 
         scp_from(load_host, key, known_hosts, "~/llm/results", directory / "results")
@@ -819,7 +841,7 @@ def run(args: argparse.Namespace) -> int:
             success = False
         elapsed = (datetime.now(UTC) - datetime.fromisoformat(state["started_at"])).total_seconds()
         state["elapsed_seconds"] = round(elapsed, 1)
-        state["estimated_cost_usd"] = round(elapsed / 3600.0 * HOURLY_USD, 6)
+        state["estimated_cost_usd"] = round(elapsed / 3600.0 * state.get("hourly_usd", 0.625), 6)
         save_state(state_path, state)
         print(f"elapsed {elapsed:.0f}s, estimated ${state['estimated_cost_usd']:.6f}", flush=True)
         if not success:
@@ -829,10 +851,15 @@ def run(args: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--workers", type=int, default=2)
+    parser.add_argument("--rate", type=float, default=2.0)
+    parser.add_argument("--rates", nargs="+", type=float, default=None)
+    parser.add_argument("--duration", type=float, default=20.0)
+    parser.add_argument("--admission-max", type=int, default=2)
     parser.add_argument("--run", action="store_true")
     args = parser.parse_args(argv)
     if not args.run:
-        print(json.dumps(preflight(), indent=2))
+        print(json.dumps(preflight(args.workers), indent=2))
         return 0
     return run(args)
 

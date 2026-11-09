@@ -38,6 +38,7 @@ class Gateway:
         timeout: float = 120.0,
         failure_threshold: int = 5,
         open_seconds: float = 10.0,
+        watch_interval: float = 2.0,
     ):
         self.gateway_id = gateway_id
         self.admission_max = max(0, admission_max)
@@ -52,6 +53,8 @@ class Gateway:
         self.observed_p95_ms = -1.0
         self.limit_changes = 0
         self._adaptive_task: asyncio.Task | None = None
+        self._watch_task: asyncio.Task | None = None
+        self.watch_interval = max(0.0, watch_interval)
         self.timeout = timeout
         self.router = Router(
             worker_urls,
@@ -68,6 +71,8 @@ class Gateway:
         self.session = ClientSession()
         if self.admission_adaptive:
             self._adaptive_task = asyncio.create_task(self._adaptive_loop())
+        if self.watch_interval > 0:
+            self._watch_task = asyncio.create_task(self._watch_loop())
 
     async def stop(self) -> None:
         if self._adaptive_task:
@@ -76,8 +81,35 @@ class Gateway:
                 await self._adaptive_task
             except asyncio.CancelledError:
                 pass
+        if self._watch_task:
+            self._watch_task.cancel()
+            try:
+                await self._watch_task
+            except asyncio.CancelledError:
+                pass
         if self.session:
             await self.session.close()
+
+    async def _watch_loop(self) -> None:
+        while True:
+            await asyncio.sleep(self.watch_interval)
+            await self._check_workers()
+
+    async def _check_workers(self) -> None:
+        if self.session is None:
+            return
+        for worker in self.router.workers:
+            try:
+                async with self.session.get(
+                    worker.url + "/health", timeout=min(2.0, self.timeout)
+                ) as response:
+                    healthy = response.status == 200
+                    if healthy:
+                        body = await response.json()
+                        healthy = body.get("status") == "ok"
+            except (TimeoutError, ClientError, ValueError):
+                healthy = False
+            self.router.mark_health(worker, healthy)
 
     async def _adaptive_loop(self) -> None:
         while True:
@@ -178,6 +210,7 @@ class Gateway:
                 "observed_p95_ms": self.observed_p95_ms,
                 "admission_samples": len(self.latency_window),
                 "limit_changes": self.limit_changes,
+                "watch_interval": self.watch_interval,
                 "inflight": self.inflight,
                 "workers": self.router.snapshot(),
             }
@@ -256,6 +289,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--timeout", type=float, default=120.0)
     parser.add_argument("--failure-threshold", type=int, default=5)
     parser.add_argument("--open-seconds", type=float, default=10.0)
+    parser.add_argument("--watch-interval", type=float, default=2.0)
     args = parser.parse_args(argv)
     gateway = Gateway(
         gateway_id=args.id,
@@ -269,6 +303,7 @@ def main(argv: list[str] | None = None) -> int:
         timeout=args.timeout,
         failure_threshold=args.failure_threshold,
         open_seconds=args.open_seconds,
+        watch_interval=args.watch_interval,
     )
     web.run_app(create_app(gateway), host=args.host, port=args.port, print=None)
     return 0

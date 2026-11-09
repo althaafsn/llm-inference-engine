@@ -20,6 +20,7 @@ class WorkerState:
     circuit_open_until: float = 0.0
     total: int = 0
     errors: int = 0
+    health_failures: int = 0
 
 
 class Router:
@@ -88,6 +89,16 @@ class Router:
         if worker.failures >= self.failure_threshold:
             worker.circuit_open_until = time.monotonic() + self.open_seconds
 
+    def mark_health(self, worker: WorkerState, healthy: bool) -> None:
+        if healthy:
+            worker.health_failures = 0
+            worker.failures = 0
+            worker.circuit_open_until = 0.0
+            return
+        worker.health_failures += 1
+        if worker.health_failures >= 2:
+            worker.circuit_open_until = time.monotonic() + self.open_seconds
+
     def snapshot(self) -> list[dict]:
         now = time.monotonic()
         return [
@@ -97,6 +108,7 @@ class Router:
                 "total": worker.total,
                 "errors": worker.errors,
                 "failures": worker.failures,
+                "health_failures": worker.health_failures,
                 "circuit_open": now < worker.circuit_open_until,
             }
             for worker in self.workers

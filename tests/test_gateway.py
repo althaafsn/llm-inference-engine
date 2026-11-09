@@ -45,6 +45,22 @@ class GatewayTests(unittest.IsolatedAsyncioTestCase):
             await gateway.stop()
 
 
+class WatcherTests(unittest.IsolatedAsyncioTestCase):
+    async def test_watcher_opens_circuit_for_dead_worker(self):
+        gateway = Gateway(
+            "gateway-1",
+            ["http://127.0.0.1:1"],
+            admission_max=0,
+            watch_interval=0.05,
+        )
+        await gateway.start()
+        try:
+            await asyncio.sleep(0.5)
+            self.assertTrue(gateway.router.snapshot()[0]["circuit_open"])
+        finally:
+            await gateway.stop()
+
+
 class AdaptiveGatewayTests(unittest.TestCase):
     def test_limit_decreases_on_high_p95(self):
         gateway = Gateway(

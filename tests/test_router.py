@@ -37,6 +37,17 @@ class RouterTests(unittest.TestCase):
         router.record_success(worker)
         self.assertFalse(router.snapshot()[0]["circuit_open"])
 
+    def test_health_failures_open_and_recover_circuit(self):
+        router = Router(["a"], policy="least_loaded", open_seconds=60)
+        worker = router.workers[0]
+        router.mark_health(worker, False)
+        self.assertFalse(router.snapshot()[0]["circuit_open"])
+        router.mark_health(worker, False)
+        self.assertTrue(router.snapshot()[0]["circuit_open"])
+        router.mark_health(worker, True)
+        self.assertFalse(router.snapshot()[0]["circuit_open"])
+        self.assertEqual(router.snapshot()[0]["health_failures"], 0)
+
     def test_unknown_policy_rejected(self):
         with self.assertRaises(ValueError):
             Router(["a"], policy="random")
