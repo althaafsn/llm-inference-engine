@@ -6,7 +6,7 @@ Local host: AMD Ryzen 7 5800H, 16 logical CPUs, 61 GB RAM. Two worker processes,
 
 Each run starts fresh workers, so the response cache begins cold. The cache comparison uses a repeated prompt and hash routing.
 
-The full data is in `benchmarks/llm-optimization.json` and `benchmarks/llm-adaptive.json`.
+The full data is in `benchmarks/llm-optimization.json` and `benchmarks/llm-adaptive.json`. Runtime-specific results for int8 quantization, attention backend, and warmup are in [runtime-optimizations.md](runtime-optimizations.md).
 
 ## Matrix
 

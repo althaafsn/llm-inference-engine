@@ -257,10 +257,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-batch-size", type=int, default=8)
     parser.add_argument("--batch-window-ms", type=float, default=10.0)
     parser.add_argument("--threads", type=int, default=4)
+    parser.add_argument("--quantize", action="store_true")
+    parser.add_argument("--attn", choices=("sdpa", "eager"), default="sdpa")
+    parser.add_argument("--warmup", action="store_true")
+    parser.add_argument("--interop-threads", type=int, default=1)
     parser.add_argument("--max-queue", type=int, default=256)
     parser.add_argument("--request-timeout", type=float, default=120.0)
     args = parser.parse_args(argv)
-    backend = build_backend(args.backend, args.model, args.threads)
+    backend = build_backend(
+        args.backend,
+        args.model,
+        args.threads,
+        quantize=args.quantize,
+        attn=args.attn,
+        warmup=args.warmup,
+        interop_threads=args.interop_threads,
+    )
     worker = LLMWorker(
         worker_id=args.id,
         backend=backend,

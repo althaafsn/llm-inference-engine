@@ -158,6 +158,18 @@ Local, CPU-only, Qwen2.5-0.5B-Instruct, 2 workers, 16 output tokens.
 
 The baseline returned HTTP 200 for every request but took 19.3 seconds to drain a 10-second workload. Admission limit 2 cut p95 to 2.03 seconds and finished in the workload window.
 
+### Runtime optimizations
+
+Two workers, 4 requests/s, 10 seconds, 8 tokens, no admission.
+
+| Config | p50 | p95 | Accepted req/s | Tokens/s |
+| --- | ---: | ---: | ---: | ---: |
+| FP32, SDPA | 3,406 ms | 5,014 ms | 3.11 | 24.9 |
+| **Int8 dynamic, SDPA** | **249 ms** | **265 ms** | **4.10** | **31.8** |
+| FP32, eager | 3,075 ms | 4,856 ms | 3.12 | 24.9 |
+
+Dynamic int8 quantization cut p95 by about 19x and raised accepted throughput from 3.11 to 4.10 requests/s. The baseline was queueing at 4 requests/s; the quantized model handled the offered load. Warmup helped cold starts slightly; SDPA versus eager was within noise. Quality was spot-checked, not benchmarked. See [runtime optimizations](docs/runtime-optimizations.md).
+
 On AWS, one `c6i.2xlarge` host ran the full Compose stack at 2 requests/s. Normal, failover, and recovery each completed 20/20 requests with no 502/503/504; the run cost $0.024164.
 
 The multi-host internal-ALB run used two gateways, two workers, and a load generator. Normal and recovery completed 40/40; the failover phase completed 31/40 with 8×502 and 1×504. TargetHealth reported the dead gateway unhealthy after **15.8 s**, and the last 504 completed about **23.0 s** after the load marker. A follow-up with three retries recovered 14 of 16 retried requests and left 2 exhausted 503s, but p95 rose to 10.8 s because retries waited for the 10 s timeout. The two ALB runs cost $0.181032; total LLM AWS spend is $0.838690. This is the same health-check weakness the ONNX engine measured; a production design needs a shorter retry timeout or draining. Full results: [docs/results.md](docs/results.md).
@@ -186,6 +198,10 @@ The suite covers the cache, routing, circuit breaker, worker batching, queue-ful
 | Worker `--batch-window-ms` | 10 | Time to collect a batch |
 | Worker `--cache-capacity` | 256 | LRU entries; 0 disables |
 | Worker `--threads` | 4 | Torch CPU threads |
+| Worker `--quantize` | off | Dynamic int8 linear quantization |
+| Worker `--attn` | sdpa | `sdpa` or `eager` attention |
+| Worker `--warmup` | off | One-token warmup after model load |
+| Worker `--interop-threads` | 1 | Torch inter-op threads |
 | Worker `--backend` | hf | `hf` or `fake` |
 
 ## Limits
