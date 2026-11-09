@@ -45,6 +45,37 @@ class GatewayTests(unittest.IsolatedAsyncioTestCase):
             await gateway.stop()
 
 
+class AdaptiveGatewayTests(unittest.TestCase):
+    def test_limit_decreases_on_high_p95(self):
+        gateway = Gateway(
+            "gateway-1",
+            ["http://127.0.0.1:1"],
+            admission_max=4,
+            admission_adaptive=True,
+            admission_min=1,
+            admission_target_p95_ms=400,
+            admission_interval_ms=1000,
+        )
+        gateway.latency_window.extend([1000.0] * 25)
+        gateway._update_limit()
+        self.assertLess(gateway.admission_limit, 4)
+        self.assertGreater(gateway.observed_p95_ms, 0)
+
+    def test_limit_increases_on_low_p95(self):
+        gateway = Gateway(
+            "gateway-1",
+            ["http://127.0.0.1:1"],
+            admission_max=4,
+            admission_adaptive=True,
+            admission_min=1,
+            admission_target_p95_ms=400,
+        )
+        gateway.admission_limit = 1
+        gateway.latency_window.extend([50.0] * 25)
+        gateway._update_limit()
+        self.assertEqual(gateway.admission_limit, 2)
+
+
 class AdmissionTests(unittest.IsolatedAsyncioTestCase):
     async def test_admission_limit_rejects_second_request(self):
         backend = FakeBackend(delay_ms=100)
