@@ -37,7 +37,7 @@ A separate sweep used 1, 2, and 4 workers on the same 16-CPU host, 4 offered req
 | 2 | 20 / 20 | 3,334 ms | 4,413 ms | 2.34 |
 | 4 | 20 / 20 | 3,201 ms | 5,584 ms | 2.07 |
 
-More workers make the local result worse. Each worker uses four torch threads, and the load generator shares the same 16 logical CPUs. Beyond one worker the host is oversubscribed, so throughput falls and p95 rises. On AWS each worker has its own `c6i.xlarge`, so the two-worker ALB topology does not have this local contention.
+More workers make the local result worse. Each worker uses four torch threads, and the load generator shares the same 16 logical CPUs. Beyond one worker the host is oversubscribed, so throughput falls and p95 rises. On AWS each worker has its own `c6i.xlarge`; the 8-worker run served 11.17 requests/s at p95 1.5 seconds. See [results](results.md#aws-8-worker-capacity).
 
 ## Findings
 

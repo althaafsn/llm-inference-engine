@@ -121,23 +121,25 @@ docker compose -f deploy/docker-compose.yml down -v
 
 ## Session 7 — AWS multi-host ALB
 
-**Read:** `deploy/aws_multihost.py`, `docs/results.md` (AWS multi-host section), `deploy/README.md`.
+**Read:** `deploy/aws_multihost.py`, `docs/results.md` (2-worker and 8-worker sections), `benchmarks/llm-8worker.json`, `deploy/README.md`.
 
 **Run:** only the read-only preflight:
 
 ```sh
-python3 deploy/aws_multihost.py
+python3 deploy/aws_multihost.py --workers 8
 ```
 
 The `--run` path creates billable resources. Do not run it without a budget and cleanup review.
 
-**Prove:** write the run order from memory: preflight, groups, five instances, setup, workers, gateways, ALB, normal, failover, recovery, cleanup. Mark where state is saved.
+**Prove:** write the run order from memory: preflight, groups, instances, setup, workers, gateways, ALB, normal sweep, failover, recovery, cleanup. Then compare 1, 2, and 8 workers.
 
 **Answer:**
 
 1. Why did the ALB take 15.8 s to mark the target unhealthy?
 2. Why were there both 502 and 504 responses?
 3. Why did the last 504 finish about 23 s after the load marker?
+4. Why did 8 workers on separate hosts scale while 4 workers on one host did not?
+5. Why is 12 requests/s a verified point, not the maximum?
 
 ## Session 8 — Interview drill
 
@@ -145,7 +147,7 @@ The `--run` path creates billable resources. Do not run it without a budget and 
 
 **Run:** record a two-minute explanation: problem, design, result, failure, limit, next step.
 
-**Prove:** answer all 14 questions in the resume entry without notes. Mark the three weakest and reread those code paths.
+**Prove:** answer all 15 questions in the resume entry without notes. Mark the three weakest and reread those code paths.
 
 **Answer:**
 

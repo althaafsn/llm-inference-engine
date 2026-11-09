@@ -4,7 +4,7 @@
 
 ## Summary
 
-I built a distributed serving system for a small Hugging Face language model. A gateway routes requests to batched workers, workers cache greedy responses, admission control protects the queue, and a health-checked proxy and an internal AWS ALB provide failover. The work turned a queue-collapse failure into an explicit load-shedding contract: at 4 requests/s, accepted p95 fell from 13.1 seconds to 2.03 seconds. Dynamic int8 quantization cut p95 from 5.0 seconds to 265 milliseconds at 4 requests/s. On AWS, a two-gateway internal ALB completed normal, failover, and recovery, but took 10–16 seconds to mark a dead target unhealthy and exposed HTTP 502/504 during that window. A bounded client retry recovered 14 of 16 retried requests and left 2 exhausted 503s, at the cost of a 10.8-second p95. I measured that tradeoff instead of hiding it.
+I built a distributed serving system for a small Hugging Face language model. A gateway routes requests to batched workers, workers cache greedy responses, admission control protects the queue, and a health-checked proxy and an internal AWS ALB provide failover. The work turned a queue-collapse failure into an explicit load-shedding contract: at 4 requests/s, accepted p95 fell from 13.1 seconds to 2.03 seconds. Dynamic int8 quantization cut p95 from 5.0 seconds to 265 milliseconds at 4 requests/s. On AWS, a two-gateway internal ALB completed normal, failover, and recovery, but took 10–16 seconds to mark a dead target unhealthy and exposed HTTP 502/504 during that window. An 8-worker run on separate hosts served 11.17 requests/s at p95 1.5 seconds. A bounded client retry recovered 14 of 16 retried requests and left 2 exhausted 503s, at the cost of a 10.8-second p95. I measured that tradeoff instead of hiding it.
 
 **Provenance:** this is a new Python implementation of the same architecture as my C++ ONNX engine. The C++ engine is a separate project. I set the goals, chose the experiments, and reviewed the results; implementation and runs were AI-assisted.
 
@@ -21,7 +21,7 @@ The second question was availability. A single gateway is a single point of fail
 - **Admission control.** A per-gateway in-flight limit returns HTTP 503 with `Retry-After: 1` when full. An AIMD adaptive policy can adjust the limit from a p95 window; static remains the default because it measured better.
 - **Observability and retry.** Prometheus metrics, JSON stats, and a retry-aware benchmark client with exponential backoff, jitter, and `Retry-After` handling.
 - **HA.** A health-checked local proxy with two gateways, plus a multi-host AWS controller that builds an internal ALB, runs normal/failover/recovery, replaces the killed gateway, and cleans up.
-- **Tests and CI.** 40 Python tests, Ruff, and GitHub Actions. Tests cover the cache, routing, circuit breaker, batching, queue-full behavior, admission, adaptive policy, retry delays, gateway retry, and HA proxy.
+- **Tests and CI.** 42 Python tests, Ruff, and GitHub Actions. Tests cover the cache, routing, circuit breaker, worker watcher, batching, queue-full behavior, admission, adaptive policy, retry delays, gateway retry, and HA proxy.
 
 ## Results
 
@@ -73,6 +73,22 @@ Two gateways, two workers, one load generator, internal ALB, 2 requests/s for 20
 
 A follow-up run added three retries with 100 ms initial backoff, a 1 s cap, 0.2 jitter, and `Retry-After`. Failover changed to 38/40: 16 requests were retried, 14 recovered, and 2 exhausted with 503 from the survivor's admission limit. p95 rose to 10.8 seconds because retries waited for the 10-second client timeout. The no-retry run cost $0.089016; the retry run cost $0.092016.
 
+### AWS 8-worker capacity
+
+Two gateways, eight workers on separate `c6i.xlarge` hosts, one load generator, and an internal ALB. The normal sweep used 4, 8, and 12 offered requests/s for 10 seconds each, 8 tokens, and no admission limit.
+
+| Offered req/s | Successes | p95 | Accepted req/s | Tokens/s |
+| ---: | ---: | ---: | ---: | ---: |
+| 4 | 40 / 40 | 1,306 ms | 3.71 | 29.6 |
+| 8 | 80 / 80 | 1,463 ms | 7.38 | 59.1 |
+| 12 | 120 / 120 | 1,504 ms | 11.17 | 89.4 |
+
+At 12 offered requests/s, 120/120 succeeded at p95 1.5 seconds. That is a verified point, not the ceiling. Failover at 12 requests/s completed 116/120 with 4 × 502; the retry client recovered 33 of 37 retried requests. TargetHealth reported the dead gateway unhealthy after 15.811 seconds. Recovery completed 120/120.
+
+**Distributed versus single:** one local worker served 2.60 requests/s at p95 3.5 seconds. Two local workers on the same host served 2.34 requests/s at p95 4.4 seconds — worse, because the host was CPU-saturated. Eight AWS workers on separate hosts served 11.17 requests/s at p95 1.5 seconds. Adding hosts helps; adding workers to one saturated host does not.
+
+Cost: $0.348115. Total LLM AWS spend: $1.186805.
+
 ## What failed, and what I learned
 
 The ALB did fail over, but not fast enough for clients. The target group checks every 5 seconds and requires two unhealthy checks. TargetHealth first reported the dead gateway unhealthy **15.8 seconds** after the termination request. Dead-target requests started about 5.0 seconds after the load marker; the last one started about 13.0 seconds. Clients saw 8 × 502 and 1 × 504. The 504 completed about 23.0 seconds after the load marker because it waited the 10-second client timeout.
@@ -84,11 +100,12 @@ The normal phase had a higher p95 than recovery (1,349 ms vs 773 ms) because the
 ## Limits
 
 - One region; all targets in one subnet/AZ. The ALB spans two AZs, but this is not a multi-AZ failover test.
+- The 8-worker run used separate hosts; the local 1/2/4-worker sweep shows that more workers on one host do not help.
 - Qwen2.5-0.5B on CPU only; no GPU, larger model, or model-quality evaluation.
 - No streaming or time-to-first-token measurement.
 - Response cache only; no KV-cache reuse or continuous batching across generation settings.
 - No global admission, TLS, authentication, or public endpoint.
-- Two ALB runs (no retry and retry); benchmark evidence, not a production capacity claim.
+- Two 2-worker ALB runs (no retry and retry) and one 8-worker capacity run; 12 req/s is verified, not the ceiling; benchmark evidence, not a production capacity claim.
 - Quantization quality was spot-checked only; the API is deprecated in torch 2.15.
 
 ## Next

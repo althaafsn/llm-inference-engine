@@ -71,7 +71,7 @@ TargetHealth reported the dead gateway unhealthy after **15.8 s**. Dead-target r
 
 A second run added three retries with 100 ms initial backoff, 1 s cap, 0.2 jitter, and `Retry-After`. Failover changed to 38/40: 16 requests were retried, 14 recovered, and 2 exhausted with 503 from the survivor's admission limit. p95 rose to **10.8 s** because retries waited for the 10 s client timeout. Target health was reported after **10.189 s** in that run.
 
-Cost: no-retry run **$0.089016**; retry run **$0.092016**; earlier attempts **$0.401329**; multi-host total **$0.582361**. Combined LLM total **$0.838690**.
+Cost: no-retry run **$0.089016**; retry run **$0.092016**; earlier attempts **$0.401329**; 8-worker capacity **$0.348115**; multi-host total **$0.930476**. Combined LLM total **$1.186805**.
 
 ### Bootstrap notes
 
@@ -79,6 +79,26 @@ Cost: no-retry run **$0.089016**; retry run **$0.092016**; earlier attempts **$0
 - The failover bench must start in the background before the gateway is terminated. A blocking SSH start delayed the termination until the bench finished.
 - SCP is retried three times; the first replacement-gateway copy failed once and lost the evidence.
 - The normal phase includes worker warmup; recovery runs on warm workers, so its p95 is lower.
+
+## AWS 8-worker capacity
+
+The controller accepts `--workers`, `--rates`, `--duration`, and `--admission-max`. This run used eight workers on separate hosts and a normal sweep at 4, 8, and 12 requests/s, then failover and recovery at 12.
+
+```sh
+python3 deploy/aws_multihost.py --run --workers 8 --rates 4 8 12 \
+  --duration 10 --admission-max 0
+```
+
+| Offered req/s | Successes | p95 | Accepted req/s |
+| ---: | ---: | ---: | ---: |
+| 4 | 40 / 40 | 1,306 ms | 3.71 |
+| 8 | 80 / 80 | 1,463 ms | 7.38 |
+| 12 | 120 / 120 | 1,504 ms | 11.17 |
+
+- Failover at 12 requests/s: 116/120, 4 × 502, 37 retried, 33 recovered, 4 exhausted; target health 15.811 s.
+- Recovery at 12 requests/s: 120/120.
+- Cost: **$0.348115**. Multi-host total: **$0.930476**. Combined LLM total: **$1.186805**.
+- All workers had their own `c6i.xlarge`. The local 1/2/4-worker sweep got worse because one host was CPU-saturated.
 
 ## Limits
 

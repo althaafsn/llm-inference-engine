@@ -101,11 +101,36 @@ A second ALB run added bounded client retry: three attempts, 100 ms initial back
 - Sixteen requests were retried. Fourteen recovered; two exhausted with 503 from the surviving gateway's admission limit.
 - Retry removed the 502/504 responses, but p95 rose to 10.8 s because retries waited for the 10 s client timeout before succeeding. A production client needs a shorter timeout or a retry budget.
 - TargetHealth reported the dead gateway unhealthy after **10.189 seconds** in this run. The observation varies with health-check timing; the two checks set a 10 s floor.
-- The retry run cost **$0.092016**. Multi-host total, including the no-retry run and earlier attempts: **$0.582361**.
+- The retry run cost **$0.092016**. Multi-host total, including the no-retry run, earlier attempts, and the 8-worker capacity run: **$0.930476**.
 
 ### Reading the normal p95
 
 The normal phase has a higher p95 (1,349 ms) than recovery (773 ms). The first requests after the workers start include warmup and the tail of two requests drives p95 at this sample size. Recovery runs on warm workers. The p50 is stable at about 760 ms in all phases.
+
+## AWS 8-worker capacity
+
+Topology: two `c6i.large` gateways, eight `c6i.xlarge` workers, one `c6i.large` load generator, and one internal ALB. Each worker is on its own host. The normal phases used 4, 8, and 12 offered requests/s for 10 seconds each, 8 output tokens, 32 connections, and no admission limit.
+
+| Offered req/s | Successes | 5xx | p50 | p95 | p99 | Accepted req/s | Tokens/s |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 4 | 40 / 40 | 0 | 1,029 ms | 1,306 ms | 1,316 ms | 3.71 | 29.6 |
+| 8 | 80 / 80 | 0 | 789 ms | 1,463 ms | 1,541 ms | 7.38 | 59.1 |
+| 12 | 120 / 120 | 0 | 884 ms | 1,504 ms | 1,601 ms | 11.17 | 89.4 |
+
+At 12 offered requests/s, 120/120 requests succeeded at p95 1.5 seconds. Accepted throughput was 11.17 requests/s, 93% of the offered rate. The run did not find the ceiling; 12 requests/s is a verified point, not the maximum.
+
+Failover at 12 requests/s: 116/120 succeeded, 4 × 502, p95 1,599 ms. The retry client retried 37 requests, recovered 33, and exhausted 4. TargetHealth reported the dead gateway unhealthy after **15.811 seconds**. Recovery at 12 requests/s completed 120/120 at p95 1,497 ms.
+
+### Distributed versus one engine
+
+- One local worker, cold cache, 4 offered req/s: 2.60 accepted req/s, p95 3,517 ms.
+- Two local workers on the same host: 2.34 accepted req/s, p95 4,413 ms. More workers made it worse because the host was CPU-saturated.
+- Two AWS workers behind the ALB: 2 offered req/s, p95 1,349 ms. This was not a capacity point.
+- Eight AWS workers on separate hosts: 11.17 accepted req/s at 12 offered, p95 1,504 ms.
+
+The useful result is the direction: adding workers on one host does not help, but adding separate hosts does. The 8-worker run served about 5.6× the 2-worker offered rate at a similar p95, with four times the workers. That is not linear, and the 2-worker run was not a ceiling measurement, but it shows real horizontal scaling.
+
+Cost: **$0.348115**. Cleanup verified; no tagged instances, volumes, security groups, load balancers, or target groups remained.
 
 ## AWS single-host deployment
 
@@ -121,7 +146,7 @@ The stack was deployed to one `c6i.2xlarge` host in `us-east-1` (Amazon Linux 20
 - During failover, all 20 requests were served by gateway 2. There were no client-visible 502, 503, or 504 responses. The proxy health interval is one second, and it retries a connection error once.
 - The host was terminated; the security group, key pair, and volume were removed. A read-only check found no active tagged instances, volumes, or security groups.
 - Successful run cost **$0.024164**. Earlier bootstrap attempts cost **$0.232165** (Docker bootstrap failures and one run with an invalid failover phase). Single-host total: **$0.256329**.
-- Multi-host ALB total: **$0.582361**. Combined LLM total: **$0.838690**.
+- Multi-host ALB total: **$0.930476**. Combined LLM total: **$1.186805**. Combined with the C++ ONNX project: **$4.752693 of $10**, about **$5.25** remains.
 
 ## Limits
 

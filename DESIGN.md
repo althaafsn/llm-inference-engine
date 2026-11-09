@@ -85,7 +85,7 @@ Admission is a load-shedding contract, not a capacity increase. It protects the 
 
 `hash` maps the prompt to a worker through a consistent-hash ring with 100 virtual nodes per worker. It keeps repeated prompts on the same worker, which makes the response cache effective. When a worker is removed, only its keys move.
 
-A worker circuit opens after five failures. While open, the router skips the worker. The gateway retries the next candidate once. A success resets the failure count.
+A worker circuit opens after five request failures or two failed health checks. A background watcher polls each worker `/health` every two seconds; two consecutive failures remove the worker from routing, and a success restores it. The gateway retries the next candidate once. A success resets the request failure count.
 
 The retry is bounded to one alternate worker. More attempts would amplify load during an outage.
 

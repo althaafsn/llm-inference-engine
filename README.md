@@ -98,7 +98,8 @@ Set `--admission-max N` on the gateway. `0` disables the limit.
 
 - `least_loaded` (default): pick the worker with the fewest in-flight requests.
 - `hash`: consistent-hash the prompt to a worker, which improves cache locality for repeated prompts.
-- A worker circuit opens after five failures and closes after ten seconds. The gateway retries the next worker once.
+- A worker circuit opens after five request failures or two failed health checks and closes after ten seconds. The gateway retries the next worker once.
+- A background watcher polls each worker `/health` every two seconds and removes an unhealthy worker from routing.
 
 ## Benchmark
 
@@ -142,6 +143,8 @@ python3 deploy/aws_single_host.py --run
 
 python3 deploy/aws_multihost.py            # preflight only
 python3 deploy/aws_multihost.py --run
+python3 deploy/aws_multihost.py --run --workers 8 --rates 4 8 12 \
+  --duration 10 --admission-max 0
 ```
 
 Both controllers use a $1.50 cap. Evidence is written under `deploy/runs/<run-id>/`, which is ignored because it contains the temporary SSH key and instance state.
@@ -172,7 +175,21 @@ Dynamic int8 quantization cut p95 by about 19x and raised accepted throughput fr
 
 On AWS, one `c6i.2xlarge` host ran the full Compose stack at 2 requests/s. Normal, failover, and recovery each completed 20/20 requests with no 502/503/504; the run cost $0.024164.
 
-The multi-host internal-ALB run used two gateways, two workers, and a load generator. Normal and recovery completed 40/40; the failover phase completed 31/40 with 8×502 and 1×504. TargetHealth reported the dead gateway unhealthy after **15.8 s**, and the last 504 completed about **23.0 s** after the load marker. A follow-up with three retries recovered 14 of 16 retried requests and left 2 exhausted 503s, but p95 rose to 10.8 s because retries waited for the 10 s timeout. The two ALB runs cost $0.181032; total LLM AWS spend is $0.838690. This is the same health-check weakness the ONNX engine measured; a production design needs a shorter retry timeout or draining. Full results: [docs/results.md](docs/results.md).
+The multi-host internal-ALB run used two gateways, two workers, and a load generator. Normal and recovery completed 40/40; the failover phase completed 31/40 with 8×502 and 1×504. TargetHealth reported the dead gateway unhealthy after **15.8 s**, and the last 504 completed about **23.0 s** after the load marker. A follow-up with three retries recovered 14 of 16 retried requests and left 2 exhausted 503s, but p95 rose to 10.8 s because retries waited for the 10 s timeout. The two-worker ALB runs cost $0.181032.
+
+The 8-worker capacity run used two gateways, eight workers on separate hosts, and no admission limit. At 12 offered requests/s it completed 120/120 with p95 **1,504 ms** and 11.17 accepted requests/s. Failover at 12 requests/s completed 116/120; the retry client recovered 33 of 37 retried requests. The run cost $0.348115. Total LLM AWS spend is **$1.186805**; combined with the ONNX project, **$4.752693 of $10**, about **$5.25** remains. Full results: [docs/results.md](docs/results.md).
+
+### 8-worker capacity
+
+Two gateways, eight workers on separate hosts, no admission limit, 10 seconds per rate, 8 tokens.
+
+| Offered req/s | Successes | p95 | Accepted req/s |
+| ---: | ---: | ---: | ---: |
+| 4 | 40 / 40 | 1,306 ms | 3.71 |
+| 8 | 80 / 80 | 1,463 ms | 7.38 |
+| 12 | 120 / 120 | 1,504 ms | 11.17 |
+
+Across separate hosts, 8 workers served 11.17 requests/s at p95 1.5 s. On one host, the 1/2/4-worker sweep got worse because the CPU was saturated. Distributed scaling depends on giving each worker its own CPU.
 
 ## Portfolio
 
@@ -194,6 +211,7 @@ The suite covers the cache, routing, circuit breaker, worker batching, queue-ful
 | Gateway `--admission-max` | 0 | Per-gateway in-flight limit; 0 disables |
 | Gateway `--routing` | least_loaded | `least_loaded` or `hash` |
 | Gateway `--timeout` | 120 s | Upstream request timeout |
+| Gateway `--watch-interval` | 2 s | Worker health poll interval; 0 disables |
 | Worker `--max-batch-size` | 8 | Maximum prompts per generation batch |
 | Worker `--batch-window-ms` | 10 | Time to collect a batch |
 | Worker `--cache-capacity` | 256 | LRU entries; 0 disables |

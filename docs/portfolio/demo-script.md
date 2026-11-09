@@ -80,7 +80,7 @@ Show the AWS multi-host table in `docs/results.md`.
 
 Say:
 
-> On AWS, two gateways and two workers behind an internal ALB completed normal and recovery. Failover exposed 8 502s and 1 504 because the ALB took 15.8 seconds to mark the dead target unhealthy. The last 504 finished at 23 seconds. The fix is client retry or draining. This is benchmark evidence, not a production claim.
+> On AWS, two gateways and two workers behind an internal ALB completed normal and recovery. Failover exposed 8 502s and 1 504 because the ALB took 15.8 seconds to mark the dead target unhealthy. The last 504 finished at 23 seconds. A retry client recovered 14 of 16 retried requests, but p95 rose to 10.8 seconds. With eight workers on separate hosts, the system served 11.17 requests/s at p95 1.5 seconds; on one host, more workers made it worse. This is benchmark evidence, not a production claim.
 
 ## If something fails
 
