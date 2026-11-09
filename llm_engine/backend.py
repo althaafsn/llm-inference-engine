@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import time
 from dataclasses import dataclass
 
@@ -23,19 +24,57 @@ class GenerateResult:
 class HFBackend:
     """A small causal LM loaded in-process with transformers."""
 
-    def __init__(self, model_name: str, threads: int = 8):
+    def __init__(
+        self,
+        model_name: str,
+        threads: int = 8,
+        quantize: bool = False,
+        attn: str = "sdpa",
+        warmup: bool = False,
+        interop_threads: int = 1,
+    ):
         import torch
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         self.torch = torch
         torch.set_num_threads(max(1, threads))
+        try:
+            torch.set_num_interop_threads(max(1, interop_threads))
+        except RuntimeError:
+            pass
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.tokenizer.padding_side = "left"
         if self.tokenizer.pad_token_id is None:
             self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
-        self.model = AutoModelForCausalLM.from_pretrained(model_name, dtype=torch.float32)
+        kwargs = {"dtype": torch.float32}
+        if attn:
+            kwargs["attn_implementation"] = attn
+        self.model = AutoModelForCausalLM.from_pretrained(model_name, **kwargs)
         self.model.eval()
+        self.quantized = False
+        if quantize:
+            self.model = torch.ao.quantization.quantize_dynamic(
+                self.model, {torch.nn.Linear}, dtype=torch.qint8
+            )
+            self.quantized = True
+        if warmup:
+            self._warmup()
         self.model_name = model_name
+
+    def _warmup(self) -> None:
+        prompt = self._prompt("warmup")
+        inputs = self.tokenizer(prompt, return_tensors="pt")
+        try:
+            with self.torch.inference_mode():
+                self.model.generate(
+                    input_ids=inputs.input_ids,
+                    attention_mask=inputs.attention_mask,
+                    max_new_tokens=1,
+                    do_sample=False,
+                    pad_token_id=self.tokenizer.pad_token_id,
+                )
+        except Exception as exc:
+            print(f"warning: warmup failed: {exc}", file=sys.stderr)
 
     def _prompt(self, prompt: str) -> str:
         messages = [{"role": "user", "content": prompt}]
@@ -96,9 +135,24 @@ class FakeBackend:
         return results
 
 
-def build_backend(name: str, model: str, threads: int = 8):
+def build_backend(
+    name: str,
+    model: str,
+    threads: int = 8,
+    quantize: bool = False,
+    attn: str = "sdpa",
+    warmup: bool = False,
+    interop_threads: int = 1,
+):
     if name == "fake":
         return FakeBackend()
     if name == "hf":
-        return HFBackend(model, threads=threads)
+        return HFBackend(
+            model,
+            threads=threads,
+            quantize=quantize,
+            attn=attn,
+            warmup=warmup,
+            interop_threads=interop_threads,
+        )
     raise ValueError(f"unknown backend: {name}")

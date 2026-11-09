@@ -72,7 +72,7 @@ Say:
 
 > The cache hits most repeated prompts and returns in about two milliseconds. The first misses pay full generation. Hash routing keeps the repeated prompt on the same worker.
 
-If time permits, mention the 135M model: p95 346 ms vs 1,072 ms for 0.5B in the optimization matrix.
+If time permits, mention the runtime comparison: p95 fell from 5.0 seconds (FP32) to 265 ms (int8) at 4 requests/s with two workers. Quality was spot-checked, not benchmarked.
 
 ## 4:20–5:00 — AWS ALB result and limits
 

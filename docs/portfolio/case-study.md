@@ -4,7 +4,7 @@
 
 ## Summary
 
-I built a distributed serving system for a small Hugging Face language model. A gateway routes requests to batched workers, workers cache greedy responses, admission control protects the queue, and a health-checked proxy and an internal AWS ALB provide failover. The work turned a queue-collapse failure into an explicit load-shedding contract: at 4 requests/s, accepted p95 fell from 13.1 seconds to 2.03 seconds. On AWS, a two-gateway internal ALB completed normal, failover, and recovery, but took 10–16 seconds to mark a dead target unhealthy and exposed HTTP 502/504 during that window. A bounded client retry recovered 14 of 16 retried requests and left 2 exhausted 503s, at the cost of a 10.8-second p95. I measured that tradeoff instead of hiding it.
+I built a distributed serving system for a small Hugging Face language model. A gateway routes requests to batched workers, workers cache greedy responses, admission control protects the queue, and a health-checked proxy and an internal AWS ALB provide failover. The work turned a queue-collapse failure into an explicit load-shedding contract: at 4 requests/s, accepted p95 fell from 13.1 seconds to 2.03 seconds. Dynamic int8 quantization cut p95 from 5.0 seconds to 265 milliseconds at 4 requests/s. On AWS, a two-gateway internal ALB completed normal, failover, and recovery, but took 10–16 seconds to mark a dead target unhealthy and exposed HTTP 502/504 during that window. A bounded client retry recovered 14 of 16 retried requests and left 2 exhausted 503s, at the cost of a 10.8-second p95. I measured that tradeoff instead of hiding it.
 
 **Provenance:** this is a new Python implementation of the same architecture as my C++ ONNX engine. The C++ engine is a separate project. I set the goals, chose the experiments, and reviewed the results; implementation and runs were AI-assisted.
 
@@ -45,6 +45,18 @@ A 14-config matrix varied threads, batch window, batch size, admission, routing,
 - Adaptive admission converged from 6 to 1, but static 2 still had the better tail (1,242 ms vs 2,654 ms) because the early queue dominated.
 - A separate 1/2/4-worker sweep on one 16-CPU host got worse with more workers (p95 3.5, 4.4, and 5.6 seconds). The host was CPU-saturated; the AWS topology gives each worker its own host.
 
+### Runtime optimization
+
+A second comparison at 4 requests/s, 10 seconds, 8 tokens, no admission:
+
+| Config | p50 | p95 | Accepted req/s |
+| --- | ---: | ---: | ---: |
+| FP32, SDPA | 3,406 ms | 5,014 ms | 3.11 |
+| Int8 dynamic, SDPA | 249 ms | 265 ms | 4.10 |
+| FP32, eager | 3,075 ms | 4,856 ms | 3.12 |
+
+Dynamic int8 quantization cut p95 by about 19x and removed the queue at 4 requests/s. Warmup helped cold starts slightly; SDPA versus eager was within noise. Quality was spot-checked, not benchmarked. The PyTorch dynamic quantization API is deprecated in torch 2.15.
+
 ### AWS single host
 
 One `c6i.2xlarge` host with the full Docker Compose stack: 20/20 in normal, failover, and recovery; failover served all 20 requests from gateway 2 with no 502/503/504; p95 510, 724, and 595 ms. Cost $0.024164.
@@ -77,6 +89,7 @@ The normal phase had a higher p95 than recovery (1,349 ms vs 773 ms) because the
 - Response cache only; no KV-cache reuse or continuous batching across generation settings.
 - No global admission, TLS, authentication, or public endpoint.
 - Two ALB runs (no retry and retry); benchmark evidence, not a production capacity claim.
+- Quantization quality was spot-checked only; the API is deprecated in torch 2.15.
 
 ## Next
 
@@ -89,5 +102,6 @@ The normal phase had a higher p95 than recovery (1,349 ms vs 773 ms) because the
 
 - [Results](../results.md)
 - [Optimization report](../optimization.md)
+- [Runtime optimizations](../runtime-optimizations.md)
 - [Deployment guide](../../deploy/README.md)
 - [Source repository](https://github.com/althaafsn/llm-inference-engine)

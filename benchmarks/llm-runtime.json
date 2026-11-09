@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-09",
+  "scope": "Local runtime optimization comparison, 2 workers, 4 req/s, 10 s, 8 tokens, no admission.",
+  "host": "AMD Ryzen 7 5800H, 16 logical CPUs",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "results": [
+    {
+      "name": "base",
+      "requests": 40,
+      "successes": 40,
+      "failures": 0,
+      "status_counts": {
+        "200": 40
+      },
+      "successful_requests_per_second": 3.114,
+      "tokens_per_second": 24.913,
+      "latency_ms": {
+        "p50": 3405.553,
+        "p95": 5014.093,
+        "p99": 5405.204
+      }
+    },
+    {
+      "name": "warmup",
+      "requests": 40,
+      "successes": 40,
+      "failures": 0,
+      "status_counts": {
+        "200": 40
+      },
+      "successful_requests_per_second": 3.186,
+      "tokens_per_second": 25.489,
+      "latency_ms": {
+        "p50": 3081.399,
+        "p95": 4915.79,
+        "p99": 5415.339
+      }
+    },
+    {
+      "name": "quant",
+      "requests": 40,
+      "successes": 40,
+      "failures": 0,
+      "status_counts": {
+        "200": 40
+      },
+      "successful_requests_per_second": 4.101,
+      "tokens_per_second": 31.786,
+      "latency_ms": {
+        "p50": 249.091,
+        "p95": 265.296,
+        "p99": 277.688
+      }
+    },
+    {
+      "name": "quant-warmup",
+      "requests": 40,
+      "successes": 40,
+      "failures": 0,
+      "status_counts": {
+        "200": 40
+      },
+      "successful_requests_per_second": 4.101,
+      "tokens_per_second": 31.782,
+      "latency_ms": {
+        "p50": 248.891,
+        "p95": 266.864,
+        "p99": 286.568
+      }
+    },
+    {
+      "name": "eager",
+      "requests": 40,
+      "successes": 40,
+      "failures": 0,
+      "status_counts": {
+        "200": 40
+      },
+      "successful_requests_per_second": 3.117,
+      "tokens_per_second": 24.937,
+      "latency_ms": {
+        "p50": 3075.302,
+        "p95": 4856.333,
+        "p99": 5290.616
+      }
+    }
+  ]
+}

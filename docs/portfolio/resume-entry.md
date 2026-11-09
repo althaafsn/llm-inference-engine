@@ -6,7 +6,7 @@
 *[github.com/althaafsn/llm-inference-engine](https://github.com/althaafsn/llm-inference-engine)*
 
 - Built a distributed LLM serving engine with an `aiohttp` gateway, batched PyTorch workers, an LRU response cache, per-gateway admission control, and Prometheus metrics; cut accepted p95 from 13.1 s to 2.03 s at 4 requests/s by shedding excess load with HTTP 503 and `Retry-After`.
-- Ran a 14-config optimization matrix across threads, batch window, admission, routing, cache, and model size; selected 4 threads, 10 ms batching, least-loaded routing, and a static limit of 2, and measured SmolLM2-135M at 3.1x lower p95 than Qwen2.5-0.5B.
+- Ran a 14-config matrix and LLM-specific runtime tests; selected 4 threads, 10 ms batching, least-loaded routing, and a static limit of 2, and used dynamic int8 quantization to cut p95 from 5.0 s to 265 ms at 4 requests/s.
 - Deployed two gateways and two workers behind an internal AWS ALB; measured a 10–16 s target-health failover, then added bounded retry that recovered 14 of 16 retried requests and left 2 exhausted 503s, with p95 rising to 10.8 s.
 - Added 40 tests and CI; kept total AWS spend to **$0.84** and verified zero remaining resources after every run.
 
@@ -27,6 +27,7 @@ Use three bullets if space is tight. Drop the cost bullet first; the engineering
 | p95 13.1 s → 2.03 s at 4 req/s | `docs/results.md`, local overload table |
 | 14-config optimization matrix | `docs/optimization.md`, `benchmarks/llm-optimization.json` |
 | 4 threads, 10 ms, least-loaded, limit 2 | `docs/optimization.md`, decisions section |
+| Int8 p95 5.0 s → 265 ms at 4 req/s | `docs/runtime-optimizations.md`, `benchmarks/llm-runtime.json` |
 | SmolLM2-135M 3.1x lower p95 | `docs/optimization.md`, model row |
 | 10–16 s target-health failover | `docs/results.md`, AWS multi-host section |
 | 14 of 16 retried; 2 exhausted 503s | same section, client retry table |
@@ -44,6 +45,7 @@ Use three bullets if space is tight. Drop the cost bullet first; the engineering
 - “Handles 4 requests/s”. The offered rate was 4; accepted throughput was about 1–2 requests/s after shedding.
 - “Wrote every line”. Implementation and runs were AI-assisted; you directed the work and reviewed the results.
 - “Retry fixed the failover latency”. Retry removed 502/504 but raised p95 to 10.8 s; the health window is still 10–16 s.
+- “Quantization is quality-neutral”. It was spot-checked only, not benchmarked. The PyTorch dynamic quantization API is deprecated in torch 2.15.
 
 ## Can you defend this?
 
@@ -59,7 +61,8 @@ Use three bullets if space is tight. Drop the cost bullet first; the engineering
 10. **Why cache only greedy responses?** Sampled responses are not deterministic. Caching them would return a different answer for the same prompt and settings.
 11. **Why least-loaded instead of hash?** Least-loaded beat hash for unique prompts (1,072 ms vs 1,660 ms). Hash is useful when repeated prompts must reach the same worker for cache locality.
 12. **What did retry fix, and what did it cost?** It removed 502/504; 14 of 16 retried requests recovered. The cost is p95 10.8 s because retries waited for the 10 s timeout. A shorter timeout or a retry budget is next.
-13. **What did you personally do?** You set the goals, chose the experiments, and reviewed the results. Implementation and runs were AI-assisted. Say that plainly and be ready to explain the code paths.
+13. **What did int8 quantization actually change?** It replaced Linear weights with int8 and kept activations dynamic. p95 fell from 5.0 s to 265 ms at 4 requests/s, and accepted throughput rose from 3.11 to 4.10. The baseline was queueing; quantization removed the queue. Quality was spot-checked, not benchmarked, and the API is deprecated.
+14. **What did you personally do?** You set the goals, chose the experiments, and reviewed the results. Implementation and runs were AI-assisted. Say that plainly and be ready to explain the code paths.
 
 ## Risks before publishing
 
@@ -67,3 +70,4 @@ Use three bullets if space is tight. Drop the cost bullet first; the engineering
 - The project is strongest as distributed systems and performance engineering, not as a general backend service. It has no database, authentication, or multi-tenant API.
 - The 10–16 s failover is a limitation, not a hidden failure. Present it as measured evidence and a clear next step.
 - The repository is MIT-licensed and original; the C++ ONNX engine is a separate project with its own provenance note.
+- Quantization is an opt-in benchmark result, not a quality guarantee. The default is FP32.

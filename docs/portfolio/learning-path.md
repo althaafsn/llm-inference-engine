@@ -37,15 +37,16 @@ The tests use the fake backend and do not load the model. The benchmark download
 
 **Read:** `llm_engine/worker.py` (`_scheduler`, `_run_batch`), `llm_engine/cache.py`, `llm_engine/backend.py`.
 
-**Run:** the Session 1 command twice: once with `--repeat --routing hash`, once with `--cache-capacity 0 --repeat --routing hash`.
+**Run:** the Session 1 command twice: once with `--repeat --routing hash`, once with `--cache-capacity 0 --repeat --routing hash`. Then run once with `--quantize` and compare p95 and tokens/s with the FP32 run.
 
-**Prove:** compare cache hits, p50, and p95. Explain why the second run is slower.
+**Prove:** compare cache hits, p50, p95, and tokens/s. Explain why the no-cache run is slower and why int8 is faster.
 
 **Answer:**
 
 1. Why does the scheduler group requests by generation settings?
 2. Why does a larger batch improve throughput but hurt the first request?
 3. Why is the cache only for greedy responses?
+4. What did int8 quantization change, and what did you not measure?
 
 ## Session 3 — Admission and adaptive control
 
@@ -144,7 +145,7 @@ The `--run` path creates billable resources. Do not run it without a budget and 
 
 **Run:** record a two-minute explanation: problem, design, result, failure, limit, next step.
 
-**Prove:** answer all 13 questions in the resume entry without notes. Mark the three weakest and reread those code paths.
+**Prove:** answer all 14 questions in the resume entry without notes. Mark the three weakest and reread those code paths.
 
 **Answer:**
 

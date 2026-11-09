@@ -295,6 +295,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--backend", choices=("hf", "fake"), default="hf")
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--threads", type=int, default=4)
+    parser.add_argument("--quantize", action="store_true")
+    parser.add_argument("--attn", choices=("sdpa", "eager"), default="sdpa")
+    parser.add_argument("--warmup", action="store_true")
+    parser.add_argument("--interop-threads", type=int, default=1)
     parser.add_argument("--batch-window-ms", type=float, default=10.0)
     parser.add_argument("--max-batch-size", type=int, default=8)
     parser.add_argument("--cache-capacity", type=int, default=256)
@@ -387,29 +391,34 @@ async def run(args: argparse.Namespace) -> int:
         worker_ports = [free_port(used_ports) for _ in range(args.workers)]
         worker_processes = []
         for index, port in enumerate(worker_ports):
-            process = start_process(
+            worker_command = [
+                "llm_engine.worker",
+                "--port",
+                str(port),
+                "--id",
                 f"worker-{index + 1}",
-                [
-                    "llm_engine.worker",
-                    "--port",
-                    str(port),
-                    "--id",
-                    f"worker-{index + 1}",
-                    "--model",
-                    args.model,
-                    "--backend",
-                    args.backend,
-                    "--threads",
-                    str(args.threads),
-                    "--batch-window-ms",
-                    str(args.batch_window_ms),
-                    "--max-batch-size",
-                    str(args.max_batch_size),
-                    "--cache-capacity",
-                    str(args.cache_capacity),
-                ],
-                output,
-            )
+                "--model",
+                args.model,
+                "--backend",
+                args.backend,
+                "--threads",
+                str(args.threads),
+                "--attn",
+                args.attn,
+                "--interop-threads",
+                str(args.interop_threads),
+                "--batch-window-ms",
+                str(args.batch_window_ms),
+                "--max-batch-size",
+                str(args.max_batch_size),
+                "--cache-capacity",
+                str(args.cache_capacity),
+            ]
+            if args.quantize:
+                worker_command.append("--quantize")
+            if args.warmup:
+                worker_command.append("--warmup")
+            process = start_process(f"worker-{index + 1}", worker_command, output)
             processes.append(process)
             worker_processes.append(process)
             workers.append(f"http://127.0.0.1:{port}")
@@ -506,6 +515,10 @@ async def run(args: argparse.Namespace) -> int:
             "backend": args.backend,
             "workers": args.workers,
             "threads": args.threads,
+            "quantize": args.quantize,
+            "attn": args.attn,
+            "warmup": args.warmup,
+            "interop_threads": args.interop_threads,
             "rate": args.rate,
             "duration": args.duration,
             "concurrency": args.concurrency,
