@@ -1,0 +1,295 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-08",
+  "scope": "Local adaptive admission comparison at 4 offered req/s for 20 seconds. Not an AWS result.",
+  "host": "AMD Ryzen 7 5800H, 16 logical CPUs",
+  "model": "Qwen/Qwen2.5-0.5B-Instruct",
+  "workers": 2,
+  "threads_per_worker": 4,
+  "max_tokens": 8,
+  "concurrency": 16,
+  "results": [
+    {
+      "requests": 80,
+      "successes": 44,
+      "failures": 36,
+      "status_counts": {
+        "200": 44,
+        "503": 36
+      },
+      "wall_seconds": 20.578,
+      "successful_requests_per_second": 2.138,
+      "tokens_per_second": 17.106,
+      "cache_hits": 15,
+      "retry": {
+        "retried_requests": 0,
+        "retry_successes": 0,
+        "retry_exhausted": 0,
+        "attempts_total": 80
+      },
+      "latency_ms": {
+        "p50": 834.797,
+        "p95": 2654.105,
+        "p99": 2795.491
+      },
+      "gateway_stats": {
+        "accepted": 44,
+        "rejected": 36,
+        "completed": 44,
+        "failed": 0,
+        "cache_hits": 15,
+        "retries": 0,
+        "total_tokens": 352,
+        "latency_ms": {
+          "p50": 832.73,
+          "p95": 2651.361,
+          "p99": 2793.155
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 1,
+        "admission_max": 6,
+        "admission_min": 1,
+        "admission_adaptive": true,
+        "admission_target_p95_ms": 1000.0,
+        "observed_p95_ms": 2652.959,
+        "admission_samples": 44,
+        "limit_changes": 5,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:59951",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:53827",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 4,
+        "rate": 4.0,
+        "duration": 20.0,
+        "concurrency": 16,
+        "max_tokens": 8,
+        "admission_max": 6,
+        "admission_adaptive": true,
+        "admission_min": 1,
+        "admission_target_p95_ms": 1000.0,
+        "admission_interval_ms": 250.0,
+        "retry": {
+          "attempts": 0,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "least_loaded",
+        "repeat": false,
+        "batch_window_ms": 10.0,
+        "max_batch_size": 8,
+        "cache_capacity": 256
+      },
+      "name": "adaptive"
+    },
+    {
+      "requests": 80,
+      "successes": 64,
+      "failures": 16,
+      "status_counts": {
+        "200": 64,
+        "503": 16
+      },
+      "wall_seconds": 20.0,
+      "successful_requests_per_second": 3.2,
+      "tokens_per_second": 25.6,
+      "cache_hits": 29,
+      "retry": {
+        "retried_requests": 0,
+        "retry_successes": 0,
+        "retry_exhausted": 0,
+        "attempts_total": 80
+      },
+      "latency_ms": {
+        "p50": 999.006,
+        "p95": 2813.797,
+        "p99": 3044.798
+      },
+      "gateway_stats": {
+        "accepted": 64,
+        "rejected": 16,
+        "completed": 64,
+        "failed": 0,
+        "cache_hits": 29,
+        "retries": 0,
+        "total_tokens": 512,
+        "latency_ms": {
+          "p50": 997.311,
+          "p95": 2811.75,
+          "p99": 3042.153
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 6,
+        "admission_max": 6,
+        "admission_min": 1,
+        "admission_adaptive": false,
+        "admission_target_p95_ms": 400.0,
+        "observed_p95_ms": -1.0,
+        "admission_samples": 64,
+        "limit_changes": 0,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:50671",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:45929",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 4,
+        "rate": 4.0,
+        "duration": 20.0,
+        "concurrency": 16,
+        "max_tokens": 8,
+        "admission_max": 6,
+        "admission_adaptive": false,
+        "admission_min": 1,
+        "admission_target_p95_ms": 400.0,
+        "admission_interval_ms": 1000.0,
+        "retry": {
+          "attempts": 0,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "least_loaded",
+        "repeat": false,
+        "batch_window_ms": 10.0,
+        "max_batch_size": 8,
+        "cache_capacity": 256
+      },
+      "name": "static-6"
+    },
+    {
+      "requests": 80,
+      "successes": 38,
+      "failures": 42,
+      "status_counts": {
+        "503": 42,
+        "200": 38
+      },
+      "wall_seconds": 20.571,
+      "successful_requests_per_second": 1.847,
+      "tokens_per_second": 14.778,
+      "cache_hits": 7,
+      "retry": {
+        "retried_requests": 0,
+        "retry_successes": 0,
+        "retry_exhausted": 0,
+        "attempts_total": 80
+      },
+      "latency_ms": {
+        "p50": 982.429,
+        "p95": 1241.831,
+        "p99": 1293.794
+      },
+      "gateway_stats": {
+        "accepted": 38,
+        "rejected": 42,
+        "completed": 38,
+        "failed": 0,
+        "cache_hits": 7,
+        "retries": 0,
+        "total_tokens": 304,
+        "latency_ms": {
+          "p50": 980.256,
+          "p95": 1239.907,
+          "p99": 1292.0
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 2,
+        "admission_max": 2,
+        "admission_min": 1,
+        "admission_adaptive": false,
+        "admission_target_p95_ms": 400.0,
+        "observed_p95_ms": -1.0,
+        "admission_samples": 38,
+        "limit_changes": 0,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:50173",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:58315",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 4,
+        "rate": 4.0,
+        "duration": 20.0,
+        "concurrency": 16,
+        "max_tokens": 8,
+        "admission_max": 2,
+        "admission_adaptive": false,
+        "admission_min": 1,
+        "admission_target_p95_ms": 400.0,
+        "admission_interval_ms": 1000.0,
+        "retry": {
+          "attempts": 0,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "least_loaded",
+        "repeat": false,
+        "batch_window_ms": 10.0,
+        "max_batch_size": 8,
+        "cache_capacity": 256
+      },
+      "name": "static-2"
+    }
+  ]
+}

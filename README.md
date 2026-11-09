@@ -173,7 +173,7 @@ The suite covers the cache, routing, circuit breaker, worker batching, queue-ful
 | Worker `--max-batch-size` | 8 | Maximum prompts per generation batch |
 | Worker `--batch-window-ms` | 10 | Time to collect a batch |
 | Worker `--cache-capacity` | 256 | LRU entries; 0 disables |
-| Worker `--threads` | 8 | Torch CPU threads |
+| Worker `--threads` | 4 | Torch CPU threads |
 | Worker `--backend` | hf | `hf` or `fake` |
 
 ## Limits

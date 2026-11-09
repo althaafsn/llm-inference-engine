@@ -6,10 +6,12 @@ import argparse
 import asyncio
 import json
 import time
+from collections import deque
 
 from aiohttp import ClientError, ClientSession, web
 
-from .metrics import Metrics
+from .adaptive import next_limit
+from .metrics import Metrics, percentile
 from .protocol import parse_generate_request
 from .router import Router
 
@@ -28,6 +30,10 @@ class Gateway:
         gateway_id: str,
         worker_urls: list[str],
         admission_max: int = 0,
+        admission_adaptive: bool = False,
+        admission_min: int = 1,
+        admission_target_p95_ms: float = 400.0,
+        admission_interval_ms: float = 1000.0,
         routing: str = "least_loaded",
         timeout: float = 120.0,
         failure_threshold: int = 5,
@@ -35,6 +41,17 @@ class Gateway:
     ):
         self.gateway_id = gateway_id
         self.admission_max = max(0, admission_max)
+        self.admission_min = (
+            max(1, min(admission_min, self.admission_max)) if self.admission_max else 0
+        )
+        self.admission_adaptive = bool(admission_adaptive and self.admission_max > 0)
+        self.admission_limit = self.admission_max
+        self.admission_target_p95_ms = max(1.0, admission_target_p95_ms)
+        self.admission_interval = max(0.1, admission_interval_ms / 1000.0)
+        self.latency_window: deque[float] = deque(maxlen=256)
+        self.observed_p95_ms = -1.0
+        self.limit_changes = 0
+        self._adaptive_task: asyncio.Task | None = None
         self.timeout = timeout
         self.router = Router(
             worker_urls,
@@ -49,17 +66,48 @@ class Gateway:
 
     async def start(self) -> None:
         self.session = ClientSession()
+        if self.admission_adaptive:
+            self._adaptive_task = asyncio.create_task(self._adaptive_loop())
 
     async def stop(self) -> None:
+        if self._adaptive_task:
+            self._adaptive_task.cancel()
+            try:
+                await self._adaptive_task
+            except asyncio.CancelledError:
+                pass
         if self.session:
             await self.session.close()
+
+    async def _adaptive_loop(self) -> None:
+        while True:
+            await asyncio.sleep(self.admission_interval)
+            self._update_limit()
+
+    def _update_limit(self) -> None:
+        samples = len(self.latency_window)
+        if samples == 0:
+            return
+        observed = percentile(list(self.latency_window), 0.95) or 0.0
+        self.observed_p95_ms = observed
+        new_limit = next_limit(
+            self.admission_limit,
+            observed,
+            samples,
+            self.admission_min,
+            self.admission_max,
+            self.admission_target_p95_ms,
+        )
+        if new_limit != self.admission_limit:
+            self.admission_limit = new_limit
+            self.limit_changes += 1
 
     async def generate(self, data: dict) -> dict:
         request = parse_generate_request(data)
         admitted = False
-        if self.admission_max > 0:
+        if self.admission_limit > 0:
             async with self._lock:
-                if self.inflight >= self.admission_max:
+                if self.inflight >= self.admission_limit:
                     self.metrics.record_rejected()
                     raise AdmissionRejected("admission limit reached")
                 self.inflight += 1
@@ -108,6 +156,7 @@ class Gateway:
                     int(result.get("tokens", 0)),
                     bool(result.get("cached", False)),
                 )
+                self.latency_window.append((time.monotonic() - started) * 1000.0)
                 return {**result, "gateway": self.gateway_id}
             except (TimeoutError, ClientError, ValueError, UpstreamError) as exc:
                 self.router.record_failure(worker)
@@ -121,7 +170,14 @@ class Gateway:
         return self.metrics.snapshot(
             {
                 "gateway": self.gateway_id,
+                "admission_limit": self.admission_limit,
                 "admission_max": self.admission_max,
+                "admission_min": self.admission_min,
+                "admission_adaptive": self.admission_adaptive,
+                "admission_target_p95_ms": self.admission_target_p95_ms,
+                "observed_p95_ms": self.observed_p95_ms,
+                "admission_samples": len(self.latency_window),
+                "limit_changes": self.limit_changes,
                 "inflight": self.inflight,
                 "workers": self.router.snapshot(),
             }
@@ -192,6 +248,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--id", default="gateway-1")
     parser.add_argument("--workers", nargs="+", required=True)
     parser.add_argument("--admission-max", type=int, default=0)
+    parser.add_argument("--admission-adaptive", action="store_true")
+    parser.add_argument("--admission-min", type=int, default=1)
+    parser.add_argument("--admission-target-p95-ms", type=float, default=400.0)
+    parser.add_argument("--admission-interval-ms", type=float, default=1000.0)
     parser.add_argument("--routing", choices=("hash", "least_loaded"), default="least_loaded")
     parser.add_argument("--timeout", type=float, default=120.0)
     parser.add_argument("--failure-threshold", type=int, default=5)
@@ -201,6 +261,10 @@ def main(argv: list[str] | None = None) -> int:
         gateway_id=args.id,
         worker_urls=args.workers,
         admission_max=args.admission_max,
+        admission_adaptive=args.admission_adaptive,
+        admission_min=args.admission_min,
+        admission_target_p95_ms=args.admission_target_p95_ms,
+        admission_interval_ms=args.admission_interval_ms,
         routing=args.routing,
         timeout=args.timeout,
         failure_threshold=args.failure_threshold,

@@ -1,0 +1,1344 @@
+{
+  "results": [
+    {
+      "requests": 20,
+      "successes": 15,
+      "failures": 5,
+      "status_counts": {
+        "200": 15,
+        "503": 5
+      },
+      "wall_seconds": 9.913,
+      "successful_requests_per_second": 1.513,
+      "tokens_per_second": 12.106,
+      "cache_hits": 0,
+      "retry": {
+        "retried_requests": 0,
+        "retry_successes": 0,
+        "retry_exhausted": 0,
+        "attempts_total": 20
+      },
+      "latency_ms": {
+        "p50": 940.444,
+        "p95": 1072.375,
+        "p99": 1072.375
+      },
+      "gateway_stats": {
+        "accepted": 15,
+        "rejected": 5,
+        "completed": 15,
+        "failed": 0,
+        "cache_hits": 0,
+        "retries": 0,
+        "total_tokens": 120,
+        "latency_ms": {
+          "p50": 936.952,
+          "p95": 1069.362,
+          "p99": 1069.362
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 2,
+        "admission_max": 2,
+        "admission_min": 1,
+        "admission_adaptive": false,
+        "admission_target_p95_ms": 400.0,
+        "observed_p95_ms": -1.0,
+        "admission_samples": 15,
+        "limit_changes": 0,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:55613",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:57711",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 4,
+        "rate": 2.0,
+        "duration": 10.0,
+        "concurrency": 8,
+        "max_tokens": 8,
+        "admission_max": 2,
+        "admission_adaptive": false,
+        "admission_min": 1,
+        "admission_target_p95_ms": 400.0,
+        "admission_interval_ms": 1000.0,
+        "retry": {
+          "attempts": 0,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "least_loaded",
+        "repeat": false,
+        "batch_window_ms": 10,
+        "max_batch_size": 8,
+        "cache_capacity": 256,
+        "name": "base"
+      },
+      "name": "base",
+      "local_wall_seconds": 16.856
+    },
+    {
+      "requests": 20,
+      "successes": 14,
+      "failures": 6,
+      "status_counts": {
+        "503": 6,
+        "200": 14
+      },
+      "wall_seconds": 10.617,
+      "successful_requests_per_second": 1.319,
+      "tokens_per_second": 10.549,
+      "cache_hits": 0,
+      "retry": {
+        "retried_requests": 0,
+        "retry_successes": 0,
+        "retry_exhausted": 0,
+        "attempts_total": 20
+      },
+      "latency_ms": {
+        "p50": 1201.286,
+        "p95": 1330.397,
+        "p99": 1330.397
+      },
+      "gateway_stats": {
+        "accepted": 14,
+        "rejected": 6,
+        "completed": 14,
+        "failed": 0,
+        "cache_hits": 0,
+        "retries": 0,
+        "total_tokens": 112,
+        "latency_ms": {
+          "p50": 1199.386,
+          "p95": 1327.411,
+          "p99": 1327.411
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 2,
+        "admission_max": 2,
+        "admission_min": 1,
+        "admission_adaptive": false,
+        "admission_target_p95_ms": 400.0,
+        "observed_p95_ms": -1.0,
+        "admission_samples": 14,
+        "limit_changes": 0,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:42767",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:38291",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 2,
+        "rate": 2.0,
+        "duration": 10.0,
+        "concurrency": 8,
+        "max_tokens": 8,
+        "admission_max": 2,
+        "admission_adaptive": false,
+        "admission_min": 1,
+        "admission_target_p95_ms": 400.0,
+        "admission_interval_ms": 1000.0,
+        "retry": {
+          "attempts": 0,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "least_loaded",
+        "repeat": false,
+        "batch_window_ms": 10,
+        "max_batch_size": 8,
+        "cache_capacity": 256,
+        "name": "threads-2"
+      },
+      "name": "threads-2",
+      "local_wall_seconds": 17.582
+    },
+    {
+      "requests": 20,
+      "successes": 14,
+      "failures": 6,
+      "status_counts": {
+        "200": 14,
+        "503": 6
+      },
+      "wall_seconds": 10.293,
+      "successful_requests_per_second": 1.36,
+      "tokens_per_second": 10.881,
+      "cache_hits": 0,
+      "retry": {
+        "retried_requests": 0,
+        "retry_successes": 0,
+        "retry_exhausted": 0,
+        "attempts_total": 20
+      },
+      "latency_ms": {
+        "p50": 988.276,
+        "p95": 1131.933,
+        "p99": 1131.933
+      },
+      "gateway_stats": {
+        "accepted": 14,
+        "rejected": 6,
+        "completed": 14,
+        "failed": 0,
+        "cache_hits": 0,
+        "retries": 0,
+        "total_tokens": 112,
+        "latency_ms": {
+          "p50": 986.427,
+          "p95": 1128.591,
+          "p99": 1128.591
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 2,
+        "admission_max": 2,
+        "admission_min": 1,
+        "admission_adaptive": false,
+        "admission_target_p95_ms": 400.0,
+        "observed_p95_ms": -1.0,
+        "admission_samples": 14,
+        "limit_changes": 0,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:42997",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:47499",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 8,
+        "rate": 2.0,
+        "duration": 10.0,
+        "concurrency": 8,
+        "max_tokens": 8,
+        "admission_max": 2,
+        "admission_adaptive": false,
+        "admission_min": 1,
+        "admission_target_p95_ms": 400.0,
+        "admission_interval_ms": 1000.0,
+        "retry": {
+          "attempts": 0,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "least_loaded",
+        "repeat": false,
+        "batch_window_ms": 10,
+        "max_batch_size": 8,
+        "cache_capacity": 256,
+        "name": "threads-8"
+      },
+      "name": "threads-8",
+      "local_wall_seconds": 17.227
+    },
+    {
+      "requests": 20,
+      "successes": 15,
+      "failures": 5,
+      "status_counts": {
+        "200": 15,
+        "503": 5
+      },
+      "wall_seconds": 9.907,
+      "successful_requests_per_second": 1.514,
+      "tokens_per_second": 12.112,
+      "cache_hits": 0,
+      "retry": {
+        "retried_requests": 0,
+        "retry_successes": 0,
+        "retry_exhausted": 0,
+        "attempts_total": 20
+      },
+      "latency_ms": {
+        "p50": 946.531,
+        "p95": 1085.653,
+        "p99": 1085.653
+      },
+      "gateway_stats": {
+        "accepted": 15,
+        "rejected": 5,
+        "completed": 15,
+        "failed": 0,
+        "cache_hits": 0,
+        "retries": 0,
+        "total_tokens": 120,
+        "latency_ms": {
+          "p50": 942.657,
+          "p95": 1083.698,
+          "p99": 1083.698
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 2,
+        "admission_max": 2,
+        "admission_min": 1,
+        "admission_adaptive": false,
+        "admission_target_p95_ms": 400.0,
+        "observed_p95_ms": -1.0,
+        "admission_samples": 15,
+        "limit_changes": 0,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:60853",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:57709",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 4,
+        "rate": 2.0,
+        "duration": 10.0,
+        "concurrency": 8,
+        "max_tokens": 8,
+        "admission_max": 2,
+        "admission_adaptive": false,
+        "admission_min": 1,
+        "admission_target_p95_ms": 400.0,
+        "admission_interval_ms": 1000.0,
+        "retry": {
+          "attempts": 0,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "least_loaded",
+        "repeat": false,
+        "batch_window_ms": 0,
+        "max_batch_size": 8,
+        "cache_capacity": 256,
+        "name": "batch-0"
+      },
+      "name": "batch-0",
+      "local_wall_seconds": 16.87
+    },
+    {
+      "requests": 20,
+      "successes": 15,
+      "failures": 5,
+      "status_counts": {
+        "200": 15,
+        "503": 5
+      },
+      "wall_seconds": 9.953,
+      "successful_requests_per_second": 1.507,
+      "tokens_per_second": 12.057,
+      "cache_hits": 0,
+      "retry": {
+        "retried_requests": 0,
+        "retry_successes": 0,
+        "retry_exhausted": 0,
+        "attempts_total": 20
+      },
+      "latency_ms": {
+        "p50": 984.242,
+        "p95": 1117.232,
+        "p99": 1117.232
+      },
+      "gateway_stats": {
+        "accepted": 15,
+        "rejected": 5,
+        "completed": 15,
+        "failed": 0,
+        "cache_hits": 0,
+        "retries": 0,
+        "total_tokens": 120,
+        "latency_ms": {
+          "p50": 980.294,
+          "p95": 1113.435,
+          "p99": 1113.435
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 2,
+        "admission_max": 2,
+        "admission_min": 1,
+        "admission_adaptive": false,
+        "admission_target_p95_ms": 400.0,
+        "observed_p95_ms": -1.0,
+        "admission_samples": 15,
+        "limit_changes": 0,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:56641",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:36189",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 4,
+        "rate": 2.0,
+        "duration": 10.0,
+        "concurrency": 8,
+        "max_tokens": 8,
+        "admission_max": 2,
+        "admission_adaptive": false,
+        "admission_min": 1,
+        "admission_target_p95_ms": 400.0,
+        "admission_interval_ms": 1000.0,
+        "retry": {
+          "attempts": 0,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "least_loaded",
+        "repeat": false,
+        "batch_window_ms": 25,
+        "max_batch_size": 8,
+        "cache_capacity": 256,
+        "name": "batch-25"
+      },
+      "name": "batch-25",
+      "local_wall_seconds": 16.887
+    },
+    {
+      "requests": 20,
+      "successes": 15,
+      "failures": 5,
+      "status_counts": {
+        "200": 15,
+        "503": 5
+      },
+      "wall_seconds": 10.357,
+      "successful_requests_per_second": 1.448,
+      "tokens_per_second": 11.587,
+      "cache_hits": 0,
+      "retry": {
+        "retried_requests": 0,
+        "retry_successes": 0,
+        "retry_exhausted": 0,
+        "attempts_total": 20
+      },
+      "latency_ms": {
+        "p50": 971.096,
+        "p95": 1075.835,
+        "p99": 1075.835
+      },
+      "gateway_stats": {
+        "accepted": 15,
+        "rejected": 5,
+        "completed": 15,
+        "failed": 0,
+        "cache_hits": 0,
+        "retries": 0,
+        "total_tokens": 120,
+        "latency_ms": {
+          "p50": 969.285,
+          "p95": 1072.503,
+          "p99": 1072.503
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 2,
+        "admission_max": 2,
+        "admission_min": 1,
+        "admission_adaptive": false,
+        "admission_target_p95_ms": 400.0,
+        "observed_p95_ms": -1.0,
+        "admission_samples": 15,
+        "limit_changes": 0,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:36265",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:40441",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 4,
+        "rate": 2.0,
+        "duration": 10.0,
+        "concurrency": 8,
+        "max_tokens": 8,
+        "admission_max": 2,
+        "admission_adaptive": false,
+        "admission_min": 1,
+        "admission_target_p95_ms": 400.0,
+        "admission_interval_ms": 1000.0,
+        "retry": {
+          "attempts": 0,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "least_loaded",
+        "repeat": false,
+        "batch_window_ms": 10.0,
+        "max_batch_size": 4,
+        "cache_capacity": 256,
+        "name": "max-batch-4"
+      },
+      "name": "max-batch-4",
+      "local_wall_seconds": 17.296
+    },
+    {
+      "requests": 20,
+      "successes": 20,
+      "failures": 0,
+      "status_counts": {
+        "200": 20
+      },
+      "wall_seconds": 10.931,
+      "successful_requests_per_second": 1.83,
+      "tokens_per_second": 14.637,
+      "cache_hits": 0,
+      "retry": {
+        "retried_requests": 0,
+        "retry_successes": 0,
+        "retry_exhausted": 0,
+        "attempts_total": 20
+      },
+      "latency_ms": {
+        "p50": 1411.969,
+        "p95": 1998.216,
+        "p99": 2395.866
+      },
+      "gateway_stats": {
+        "accepted": 20,
+        "rejected": 0,
+        "completed": 20,
+        "failed": 0,
+        "cache_hits": 0,
+        "retries": 0,
+        "total_tokens": 160,
+        "latency_ms": {
+          "p50": 1410.061,
+          "p95": 1996.121,
+          "p99": 2393.869
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 0,
+        "admission_max": 0,
+        "admission_min": 0,
+        "admission_adaptive": false,
+        "admission_target_p95_ms": 400.0,
+        "observed_p95_ms": -1.0,
+        "admission_samples": 20,
+        "limit_changes": 0,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:48367",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:60519",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 4,
+        "rate": 2.0,
+        "duration": 10.0,
+        "concurrency": 8,
+        "max_tokens": 8,
+        "admission_max": 0,
+        "admission_adaptive": false,
+        "admission_min": 1,
+        "admission_target_p95_ms": 400.0,
+        "admission_interval_ms": 1000.0,
+        "retry": {
+          "attempts": 0,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "least_loaded",
+        "repeat": false,
+        "batch_window_ms": 10.0,
+        "max_batch_size": 8,
+        "cache_capacity": 256,
+        "name": "admission-0"
+      },
+      "name": "admission-0",
+      "local_wall_seconds": 17.896
+    },
+    {
+      "requests": 20,
+      "successes": 10,
+      "failures": 10,
+      "status_counts": {
+        "503": 10,
+        "200": 10
+      },
+      "wall_seconds": 9.826,
+      "successful_requests_per_second": 1.018,
+      "tokens_per_second": 8.142,
+      "cache_hits": 0,
+      "retry": {
+        "retried_requests": 0,
+        "retry_successes": 0,
+        "retry_exhausted": 0,
+        "attempts_total": 20
+      },
+      "latency_ms": {
+        "p50": 830.12,
+        "p95": 858.859,
+        "p99": 858.859
+      },
+      "gateway_stats": {
+        "accepted": 10,
+        "rejected": 10,
+        "completed": 10,
+        "failed": 0,
+        "cache_hits": 0,
+        "retries": 0,
+        "total_tokens": 80,
+        "latency_ms": {
+          "p50": 828.006,
+          "p95": 857.137,
+          "p99": 857.137
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 1,
+        "admission_max": 1,
+        "admission_min": 1,
+        "admission_adaptive": false,
+        "admission_target_p95_ms": 400.0,
+        "observed_p95_ms": -1.0,
+        "admission_samples": 10,
+        "limit_changes": 0,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:40723",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:41637",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 4,
+        "rate": 2.0,
+        "duration": 10.0,
+        "concurrency": 8,
+        "max_tokens": 8,
+        "admission_max": 1,
+        "admission_adaptive": false,
+        "admission_min": 1,
+        "admission_target_p95_ms": 400.0,
+        "admission_interval_ms": 1000.0,
+        "retry": {
+          "attempts": 0,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "least_loaded",
+        "repeat": false,
+        "batch_window_ms": 10.0,
+        "max_batch_size": 8,
+        "cache_capacity": 256,
+        "name": "admission-1"
+      },
+      "name": "admission-1",
+      "local_wall_seconds": 16.757
+    },
+    {
+      "requests": 20,
+      "successes": 20,
+      "failures": 0,
+      "status_counts": {
+        "200": 20
+      },
+      "wall_seconds": 10.952,
+      "successful_requests_per_second": 1.826,
+      "tokens_per_second": 14.609,
+      "cache_hits": 0,
+      "retry": {
+        "retried_requests": 0,
+        "retry_successes": 0,
+        "retry_exhausted": 0,
+        "attempts_total": 20
+      },
+      "latency_ms": {
+        "p50": 1427.054,
+        "p95": 1993.724,
+        "p99": 2417.834
+      },
+      "gateway_stats": {
+        "accepted": 20,
+        "rejected": 0,
+        "completed": 20,
+        "failed": 0,
+        "cache_hits": 0,
+        "retries": 0,
+        "total_tokens": 160,
+        "latency_ms": {
+          "p50": 1425.13,
+          "p95": 1991.31,
+          "p99": 2415.348
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 4,
+        "admission_max": 4,
+        "admission_min": 1,
+        "admission_adaptive": false,
+        "admission_target_p95_ms": 400.0,
+        "observed_p95_ms": -1.0,
+        "admission_samples": 20,
+        "limit_changes": 0,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:35965",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:60375",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 4,
+        "rate": 2.0,
+        "duration": 10.0,
+        "concurrency": 8,
+        "max_tokens": 8,
+        "admission_max": 4,
+        "admission_adaptive": false,
+        "admission_min": 1,
+        "admission_target_p95_ms": 400.0,
+        "admission_interval_ms": 1000.0,
+        "retry": {
+          "attempts": 0,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "least_loaded",
+        "repeat": false,
+        "batch_window_ms": 10.0,
+        "max_batch_size": 8,
+        "cache_capacity": 256,
+        "name": "admission-4"
+      },
+      "name": "admission-4",
+      "local_wall_seconds": 17.883
+    },
+    {
+      "requests": 20,
+      "successes": 14,
+      "failures": 6,
+      "status_counts": {
+        "200": 14,
+        "503": 6
+      },
+      "wall_seconds": 10.542,
+      "successful_requests_per_second": 1.328,
+      "tokens_per_second": 10.624,
+      "cache_hits": 0,
+      "retry": {
+        "retried_requests": 0,
+        "retry_successes": 0,
+        "retry_exhausted": 0,
+        "attempts_total": 20
+      },
+      "latency_ms": {
+        "p50": 1173.295,
+        "p95": 1660.244,
+        "p99": 1660.244
+      },
+      "gateway_stats": {
+        "accepted": 14,
+        "rejected": 6,
+        "completed": 14,
+        "failed": 0,
+        "cache_hits": 0,
+        "retries": 0,
+        "total_tokens": 112,
+        "latency_ms": {
+          "p50": 1171.499,
+          "p95": 1658.181,
+          "p99": 1658.181
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 2,
+        "admission_max": 2,
+        "admission_min": 1,
+        "admission_adaptive": false,
+        "admission_target_p95_ms": 400.0,
+        "observed_p95_ms": -1.0,
+        "admission_samples": 14,
+        "limit_changes": 0,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:42077",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:38267",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 4,
+        "rate": 2.0,
+        "duration": 10.0,
+        "concurrency": 8,
+        "max_tokens": 8,
+        "admission_max": 2,
+        "admission_adaptive": false,
+        "admission_min": 1,
+        "admission_target_p95_ms": 400.0,
+        "admission_interval_ms": 1000.0,
+        "retry": {
+          "attempts": 0,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "hash",
+        "repeat": false,
+        "batch_window_ms": 10.0,
+        "max_batch_size": 8,
+        "cache_capacity": 256,
+        "name": "routing-hash"
+      },
+      "name": "routing-hash",
+      "local_wall_seconds": 17.467
+    },
+    {
+      "requests": 20,
+      "successes": 20,
+      "failures": 0,
+      "status_counts": {
+        "200": 20
+      },
+      "wall_seconds": 9.503,
+      "successful_requests_per_second": 2.105,
+      "tokens_per_second": 16.837,
+      "cache_hits": 18,
+      "retry": {
+        "retried_requests": 0,
+        "retry_successes": 0,
+        "retry_exhausted": 0,
+        "attempts_total": 20
+      },
+      "latency_ms": {
+        "p50": 1.858,
+        "p95": 840.657,
+        "p99": 1167.458
+      },
+      "gateway_stats": {
+        "accepted": 20,
+        "rejected": 0,
+        "completed": 20,
+        "failed": 0,
+        "cache_hits": 18,
+        "retries": 0,
+        "total_tokens": 160,
+        "latency_ms": {
+          "p50": 0.0,
+          "p95": 837.0,
+          "p99": 1165.072
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 2,
+        "admission_max": 2,
+        "admission_min": 1,
+        "admission_adaptive": false,
+        "admission_target_p95_ms": 400.0,
+        "observed_p95_ms": -1.0,
+        "admission_samples": 20,
+        "limit_changes": 0,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:42207",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:53643",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 4,
+        "rate": 2.0,
+        "duration": 10.0,
+        "concurrency": 8,
+        "max_tokens": 8,
+        "admission_max": 2,
+        "admission_adaptive": false,
+        "admission_min": 1,
+        "admission_target_p95_ms": 400.0,
+        "admission_interval_ms": 1000.0,
+        "retry": {
+          "attempts": 0,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "hash",
+        "repeat": true,
+        "batch_window_ms": 10.0,
+        "max_batch_size": 8,
+        "cache_capacity": 256,
+        "name": "cache-repeat"
+      },
+      "name": "cache-repeat",
+      "local_wall_seconds": 16.436
+    },
+    {
+      "requests": 20,
+      "successes": 20,
+      "failures": 0,
+      "status_counts": {
+        "200": 20
+      },
+      "wall_seconds": 9.824,
+      "successful_requests_per_second": 2.036,
+      "tokens_per_second": 16.287,
+      "cache_hits": 0,
+      "retry": {
+        "retried_requests": 0,
+        "retry_successes": 0,
+        "retry_exhausted": 0,
+        "attempts_total": 20
+      },
+      "latency_ms": {
+        "p50": 325.124,
+        "p95": 345.845,
+        "p99": 356.046
+      },
+      "gateway_stats": {
+        "accepted": 20,
+        "rejected": 0,
+        "completed": 20,
+        "failed": 0,
+        "cache_hits": 0,
+        "retries": 0,
+        "total_tokens": 160,
+        "latency_ms": {
+          "p50": 323.029,
+          "p95": 343.609,
+          "p99": 352.625
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 2,
+        "admission_max": 2,
+        "admission_min": 1,
+        "admission_adaptive": false,
+        "admission_target_p95_ms": 400.0,
+        "observed_p95_ms": -1.0,
+        "admission_samples": 20,
+        "limit_changes": 0,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:60937",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:43625",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 4,
+        "rate": 2.0,
+        "duration": 10.0,
+        "concurrency": 8,
+        "max_tokens": 8,
+        "admission_max": 2,
+        "admission_adaptive": false,
+        "admission_min": 1,
+        "admission_target_p95_ms": 400.0,
+        "admission_interval_ms": 1000.0,
+        "retry": {
+          "attempts": 0,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "least_loaded",
+        "repeat": false,
+        "batch_window_ms": 10.0,
+        "max_batch_size": 8,
+        "cache_capacity": 256,
+        "name": "model-135m"
+      },
+      "name": "model-135m",
+      "local_wall_seconds": 16.509
+    },
+    {
+      "requests": 20,
+      "successes": 20,
+      "failures": 0,
+      "status_counts": {
+        "200": 20
+      },
+      "wall_seconds": 11.36,
+      "successful_requests_per_second": 1.761,
+      "tokens_per_second": 14.084,
+      "cache_hits": 0,
+      "retry": {
+        "retried_requests": 0,
+        "retry_successes": 0,
+        "retry_exhausted": 0,
+        "attempts_total": 20
+      },
+      "latency_ms": {
+        "p50": 1458.12,
+        "p95": 1915.958,
+        "p99": 2023.909
+      },
+      "gateway_stats": {
+        "accepted": 20,
+        "rejected": 0,
+        "completed": 20,
+        "failed": 0,
+        "cache_hits": 0,
+        "retries": 0,
+        "total_tokens": 160,
+        "latency_ms": {
+          "p50": 1456.108,
+          "p95": 1913.746,
+          "p99": 2021.601
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 4,
+        "admission_max": 4,
+        "admission_min": 1,
+        "admission_adaptive": true,
+        "admission_target_p95_ms": 800.0,
+        "observed_p95_ms": 2022.706,
+        "admission_samples": 20,
+        "limit_changes": 0,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:40323",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:60897",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 4,
+        "rate": 2.0,
+        "duration": 10.0,
+        "concurrency": 8,
+        "max_tokens": 8,
+        "admission_max": 4,
+        "admission_adaptive": true,
+        "admission_min": 1,
+        "admission_target_p95_ms": 800,
+        "admission_interval_ms": 1000.0,
+        "retry": {
+          "attempts": 0,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "least_loaded",
+        "repeat": false,
+        "batch_window_ms": 10.0,
+        "max_batch_size": 8,
+        "cache_capacity": 256,
+        "name": "adaptive"
+      },
+      "name": "adaptive",
+      "local_wall_seconds": 18.325
+    },
+    {
+      "requests": 20,
+      "successes": 19,
+      "failures": 1,
+      "status_counts": {
+        "200": 19,
+        "503": 1
+      },
+      "wall_seconds": 12.421,
+      "successful_requests_per_second": 1.53,
+      "tokens_per_second": 12.237,
+      "cache_hits": 0,
+      "retry": {
+        "retried_requests": 9,
+        "retry_successes": 8,
+        "retry_exhausted": 1,
+        "attempts_total": 40
+      },
+      "latency_ms": {
+        "p50": 1066.146,
+        "p95": 4226.601,
+        "p99": 4226.601
+      },
+      "gateway_stats": {
+        "accepted": 19,
+        "rejected": 21,
+        "completed": 19,
+        "failed": 0,
+        "cache_hits": 0,
+        "retries": 0,
+        "total_tokens": 152,
+        "latency_ms": {
+          "p50": 1013.25,
+          "p95": 1087.469,
+          "p99": 1087.469
+        },
+        "gateway": "gateway-1",
+        "admission_limit": 2,
+        "admission_max": 2,
+        "admission_min": 1,
+        "admission_adaptive": false,
+        "admission_target_p95_ms": 400.0,
+        "observed_p95_ms": -1.0,
+        "admission_samples": 19,
+        "limit_changes": 0,
+        "inflight": 0,
+        "workers": [
+          {
+            "url": "http://127.0.0.1:59373",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          },
+          {
+            "url": "http://127.0.0.1:48589",
+            "inflight": 0,
+            "total": 0,
+            "errors": 0,
+            "failures": 0,
+            "circuit_open": false
+          }
+        ]
+      },
+      "mode": "normal",
+      "config": {
+        "model": "Qwen/Qwen2.5-0.5B-Instruct",
+        "backend": "hf",
+        "workers": 2,
+        "threads": 4,
+        "rate": 2.0,
+        "duration": 10.0,
+        "concurrency": 8,
+        "max_tokens": 8,
+        "admission_max": 2,
+        "admission_adaptive": false,
+        "admission_min": 1,
+        "admission_target_p95_ms": 400.0,
+        "admission_interval_ms": 1000.0,
+        "retry": {
+          "attempts": 3,
+          "backoff_ms": 100.0,
+          "max_backoff_ms": 1000.0,
+          "jitter": 0.2
+        },
+        "routing": "least_loaded",
+        "repeat": false,
+        "batch_window_ms": 10.0,
+        "max_batch_size": 8,
+        "cache_capacity": 256,
+        "name": "retry",
+        "retry_attempts": 3
+      },
+      "name": "retry",
+      "local_wall_seconds": 19.4
+    }
+  ]
+}

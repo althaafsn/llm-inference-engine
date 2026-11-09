@@ -256,7 +256,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--cache-capacity", type=int, default=256)
     parser.add_argument("--max-batch-size", type=int, default=8)
     parser.add_argument("--batch-window-ms", type=float, default=10.0)
-    parser.add_argument("--threads", type=int, default=8)
+    parser.add_argument("--threads", type=int, default=4)
     parser.add_argument("--max-queue", type=int, default=256)
     parser.add_argument("--request-timeout", type=float, default=120.0)
     args = parser.parse_args(argv)
